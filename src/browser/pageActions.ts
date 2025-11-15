@@ -563,6 +563,8 @@ async function attemptSendButton(Runtime: ChromeClient['Runtime']): Promise<bool
   return false;
 }
 
+const ASSISTANT_POLL_TIMEOUT_ERROR = 'assistant-response-watchdog-timeout';
+
 export async function waitForAssistantResponse(
   Runtime: ChromeClient['Runtime'],
   timeoutMs: number,
@@ -570,19 +572,86 @@ export async function waitForAssistantResponse(
 ): Promise<{ text: string; html?: string; meta: { turnId?: string | null; messageId?: string | null } }> {
   logger('Waiting for ChatGPT response');
   const expression = buildResponseObserverExpression(timeoutMs);
-  let evaluation: Awaited<ReturnType<ChromeClient['Runtime']['evaluate']>>;
+  const evaluationPromise = Runtime.evaluate({ expression, awaitPromise: true, returnByValue: true });
+  const raceReadyEvaluation = evaluationPromise.then(
+    (value) => ({ kind: 'evaluation' as const, value }),
+    (error) => {
+      throw { source: 'evaluation' as const, error };
+    },
+  );
+  const pollerPromise = pollAssistantCompletion(Runtime, timeoutMs).then(
+    (value) => {
+      if (!value) {
+        throw { source: 'poll' as const, error: new Error(ASSISTANT_POLL_TIMEOUT_ERROR) };
+      }
+      return { kind: 'poll' as const, value };
+    },
+    (error) => {
+      throw { source: 'poll' as const, error };
+    },
+  );
+
+  let evaluation: Awaited<ReturnType<ChromeClient['Runtime']['evaluate']>> | null = null;
   try {
-    evaluation = await Runtime.evaluate({ expression, awaitPromise: true, returnByValue: true });
-  } catch (error) {
-    const snapshot = await waitForAssistantSnapshot(Runtime, Math.min(timeoutMs, 10_000));
-    const recovered = normalizeAssistantSnapshot(snapshot);
-    if (recovered) {
-      logger('Recovered assistant response via polling fallback');
-      return recovered;
+    const winner = await Promise.race([raceReadyEvaluation, pollerPromise]);
+    if (winner.kind === 'poll') {
+      logger('Captured assistant response via snapshot watchdog');
+      evaluationPromise.catch(() => undefined);
+      await terminateRuntimeExecution(Runtime);
+      return winner.value;
     }
-    await logConversationSnapshot(Runtime, logger).catch(() => undefined);
-    throw error;
+    evaluation = winner.value;
+  } catch (wrappedError) {
+    if (wrappedError && typeof wrappedError === 'object' && 'source' in wrappedError && 'error' in wrappedError) {
+      const { source, error } = wrappedError as { source: string; error: unknown };
+      if (source === 'poll' && error instanceof Error && error.message === ASSISTANT_POLL_TIMEOUT_ERROR) {
+        evaluation = await evaluationPromise;
+      } else if (source === 'poll') {
+        throw error;
+      } else if (source === 'evaluation') {
+        const recovered = await recoverAssistantResponse(Runtime, timeoutMs, logger);
+        if (recovered) {
+          return recovered;
+        }
+        throw error ?? new Error('Failed to capture assistant response');
+      }
+    } else {
+      throw wrappedError;
+    }
   }
+
+  if (!evaluation) {
+    throw new Error('Failed to capture assistant response');
+  }
+
+  const parsed = await parseAssistantEvaluationResult(Runtime, evaluation, timeoutMs, logger);
+  if (parsed) {
+    return parsed;
+  }
+  throw new Error('Unable to capture assistant response');
+}
+
+async function recoverAssistantResponse(
+  Runtime: ChromeClient['Runtime'],
+  timeoutMs: number,
+  logger: BrowserLogger,
+): Promise<{ text: string; html?: string; meta: { turnId?: string | null; messageId?: string | null } } | null> {
+  const snapshot = await waitForAssistantSnapshot(Runtime, Math.min(timeoutMs, 10_000));
+  const recovered = normalizeAssistantSnapshot(snapshot);
+  if (recovered) {
+    logger('Recovered assistant response via polling fallback');
+    return recovered;
+  }
+  await logConversationSnapshot(Runtime, logger).catch(() => undefined);
+  return null;
+}
+
+async function parseAssistantEvaluationResult(
+  Runtime: ChromeClient['Runtime'],
+  evaluation: Awaited<ReturnType<ChromeClient['Runtime']['evaluate']>>,
+  timeoutMs: number,
+  logger: BrowserLogger,
+): Promise<{ text: string; html?: string; meta: { turnId?: string | null; messageId?: string | null } } | null> {
   const { result } = evaluation;
   if (result.type === 'object' && result.value && typeof result.value === 'object' && 'text' in result.value) {
     const html = typeof (result.value as { html?: unknown }).html === 'string' ? ((result.value as { html?: string }).html ?? undefined) : undefined;
@@ -596,16 +665,68 @@ export async function waitForAssistantResponse(
   }
   const fallbackText = typeof result.value === 'string' ? (result.value as string) : '';
   if (!fallbackText) {
-    const snapshot = await waitForAssistantSnapshot(Runtime, Math.min(timeoutMs, 10_000));
-    const recovered = normalizeAssistantSnapshot(snapshot);
+    const recovered = await recoverAssistantResponse(Runtime, Math.min(timeoutMs, 10_000), logger);
     if (recovered) {
-      logger('Recovered assistant response via polling fallback');
       return recovered;
     }
-    await logConversationSnapshot(Runtime, logger).catch(() => undefined);
-    throw new Error('Unable to capture assistant response');
+    return null;
   }
   return { text: fallbackText, html: undefined, meta: {} };
+}
+
+async function terminateRuntimeExecution(Runtime: ChromeClient['Runtime']): Promise<void> {
+  if (typeof Runtime.terminateExecution !== 'function') {
+    return;
+  }
+  try {
+    await Runtime.terminateExecution();
+  } catch {
+    // ignore termination failures
+  }
+}
+
+async function pollAssistantCompletion(
+  Runtime: ChromeClient['Runtime'],
+  timeoutMs: number,
+): Promise<{ text: string; html?: string; meta: { turnId?: string | null; messageId?: string | null } } | null> {
+  const watchdogDeadline = Date.now() + timeoutMs;
+  let previousLength = 0;
+  let stableCycles = 0;
+  const requiredStableCycles = 6;
+  while (Date.now() < watchdogDeadline) {
+    const snapshot = await readAssistantSnapshot(Runtime);
+    const normalized = normalizeAssistantSnapshot(snapshot);
+    if (normalized) {
+      const currentLength = normalized.text.length;
+      if (currentLength > previousLength) {
+        previousLength = currentLength;
+        stableCycles = 0;
+      } else {
+        stableCycles += 1;
+      }
+      const stopVisible = await isStopButtonVisible(Runtime);
+      if (!stopVisible && stableCycles >= requiredStableCycles) {
+        return normalized;
+      }
+    } else {
+      previousLength = 0;
+      stableCycles = 0;
+    }
+    await delay(400);
+  }
+  return null;
+}
+
+async function isStopButtonVisible(Runtime: ChromeClient['Runtime']): Promise<boolean> {
+  try {
+    const { result } = await Runtime.evaluate({
+      expression: `Boolean(document.querySelector('${STOP_BUTTON_SELECTOR}'))`,
+      returnByValue: true,
+    });
+    return Boolean(result?.value);
+  } catch {
+    return false;
+  }
 }
 
 function normalizeAssistantSnapshot(
