@@ -24,17 +24,13 @@ If you omit `--engine`, Oracle prefers the API engine when `OPENAI_API_KEY` is p
 
 ```bash
 # One-off (no install)
-OPENAI_API_KEY=sk-... npx @steipete/oracle --prompt "Summarize the risk register" --file docs/risk-register.md
-
-# Repeat locally
-pnpm install
-pnpm run oracle -- --prompt "Summarize the risk register" --file docs/risk-register.md docs/risk-matrix.md
+OPENAI_API_KEY=sk-... npx @steipete/oracle --prompt "Summarize the risk register" --file docs/risk-register.md docs/risk-matrix.md
 
 # Browser engine (no API key)
-pnpm run oracle -- --engine browser --prompt "Summarize the risk register" --file docs/risk-register.md docs/risk-matrix.md
+npx @steipete/oracle --engine browser --prompt "Summarize the risk register" --file docs/risk-register.md docs/risk-matrix.md
 
 # Globs/exclusions
-pnpm run oracle -- --prompt "Review the TS data layer" --file "src/**/*.ts" --file "!src/**/*.test.ts"
+npx @steipete/oracle -- --prompt "Review the TS data layer" --file "src/**/*.ts" --file "!src/**/*.test.ts"
 ```
 
 ## Highlights
