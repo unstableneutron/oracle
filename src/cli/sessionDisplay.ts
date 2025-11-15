@@ -29,7 +29,7 @@ export async function showStatus({ hours, includeAll, limit, showExamples = fals
   const { entries, truncated, total } = filterSessionsByRange(metas, { hours, includeAll, limit });
   const richTty = process.stdout.isTTY && chalk.level > 0;
   if (!entries.length) {
-    console.log('No sessions found for the requested range.');
+    console.log(CLEANUP_TIP);
     if (showExamples) {
       printStatusExamples();
     }

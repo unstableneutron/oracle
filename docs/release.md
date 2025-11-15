@@ -15,6 +15,7 @@
 5. **Publish**
    - [ ] `npm login` (or confirm session) & check 2FA.
    - [ ] `npm publish --tag beta --access public` (adjust tag if needed).
+   - [ ] Verify positional prompt still works: `npx -y @steipete/oracle "Test prompt" --dry-run`.
 6. **Post-publish**
    - [ ] Promote desired dist-tag (e.g., `npm dist-tag add @steipete/oracle@X.Y.Z latest`).
    - [ ] `git tag vX.Y.Z && git push --tags`

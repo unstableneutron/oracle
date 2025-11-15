@@ -17,9 +17,8 @@ describe('shouldRequirePrompt', () => {
     expect(requires).toBe(true);
   });
 
-  test('requires prompt when preview enabled', () => {
+  test('requires prompt when preview enabled and no positional provided', () => {
     const requires = shouldRequirePrompt([], { preview: 'summary' });
     expect(requires).toBe(true);
   });
 });
-

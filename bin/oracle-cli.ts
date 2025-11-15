@@ -96,6 +96,11 @@ program.hook('preAction', (thisCommand) => {
     return;
   }
   const opts = thisCommand.optsWithGlobals() as CliOptions;
+  const positional = thisCommand.args?.[0] as string | undefined;
+  if (!opts.prompt && positional) {
+    opts.prompt = positional;
+    thisCommand.setOptionValue('prompt', positional);
+  }
   if (shouldRequirePrompt(rawCliArgs, opts)) {
     throw new Error('Prompt is required. Provide it via --prompt "<text>".');
   }
@@ -104,6 +109,7 @@ program
   .name('oracle')
   .description('One-shot GPT-5 Pro / GPT-5.1 tool for hard questions that benefit from large file context and server-side search.')
   .version(VERSION)
+  .argument('[prompt]', 'Prompt text (shorthand for --prompt).')
   .option('-p, --prompt <text>', 'User prompt to send to the model.')
   .option(
     '-f, --file <paths...>',
