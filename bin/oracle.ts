@@ -209,9 +209,9 @@ const statusCommand = program
   .option('--hours <hours>', 'Look back this many hours (default 24).', parseFloatOption, 24)
   .option('--limit <count>', 'Maximum sessions to show (max 1000).', parseIntOption, 100)
   .option('--all', 'Include all stored sessions regardless of age.', false)
-  .action(async (cmd: Command) => {
-    const statusOptions = cmd.opts<StatusOptions>();
-    const showExamples = usesDefaultStatusFilters(cmd);
+  .action(async (_options, command: Command) => {
+    const statusOptions = command.opts<StatusOptions>();
+    const showExamples = usesDefaultStatusFilters(command);
     await showStatus({
       hours: statusOptions.all ? Infinity : statusOptions.hours,
       includeAll: statusOptions.all,
@@ -225,8 +225,8 @@ statusCommand
   .description('Delete stored sessions older than the provided window (24h default).')
   .option('--hours <hours>', 'Delete sessions older than this many hours (default 24).', parseFloatOption, 24)
   .option('--all', 'Delete all stored sessions.', false)
-  .action(async (cmd: Command) => {
-    const clearOptions = cmd.opts<StatusOptions>();
+  .action(async (_options, command: Command) => {
+    const clearOptions = command.opts<StatusOptions>();
     const result = await deleteSessionsOlderThan({ hours: clearOptions.hours, includeAll: clearOptions.all });
     const scope = clearOptions.all ? 'all stored sessions' : `sessions older than ${clearOptions.hours}h`;
     console.log(`Deleted ${result.deleted} ${result.deleted === 1 ? 'session' : 'sessions'} (${scope}).`);
