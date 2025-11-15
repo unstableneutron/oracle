@@ -142,7 +142,7 @@ function buildModelSelectionExpression(targetModel: string): string {
       return value
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, ' ')
-        .replace(/\s+/g, ' ')
+        .replace(/\\s+/g, ' ')
         .trim();
     };
 
@@ -260,7 +260,9 @@ function buildModelMatchersLiteral(targetModel: string): { labelTokens: string[]
     .split(/\s+/)
     .map((token) => token.trim())
     .filter(Boolean)
-    .forEach((token) => push(token, labelTokens));
+    .forEach((token) => {
+      push(token, labelTokens);
+    });
 
   const hyphenated = base.replace(/\s+/g, '-');
   push(hyphenated, testIdTokens);

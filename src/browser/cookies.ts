@@ -131,7 +131,7 @@ const SQLITE_BINDING_HINT = [
   'If the automatic rebuild fails, run:',
   '  PYTHON=/usr/bin/python3 npm_config_build_from_source=1 pnpm rebuild chrome-cookies-secure sqlite3 keytar --workspace-root',
 ].join('\n');
-let attemptedSqliteRebuild = false;
+let attemptedSqliteRebuild: boolean = false;
 
 async function loadChromeCookiesModule(): Promise<ChromeCookiesSecureModule> {
   let imported: unknown;

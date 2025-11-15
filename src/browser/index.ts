@@ -54,9 +54,14 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
   let answerMarkdown = '';
   let answerHtml = '';
   let runStatus: 'attempted' | 'complete' = 'attempted';
+  let connectionClosedUnexpectedly = false;
 
   try {
     client = await connectToChrome(chrome.port, logger);
+    const markConnectionLost = () => {
+      connectionClosedUnexpectedly = true;
+    };
+    client.on('disconnect', markConnectionLost);
     const { Network, Page, Runtime, Input } = client;
 
     if (!config.headless && config.hideWindow) {
@@ -114,29 +119,46 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       userDataDir,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger(`Failed to complete ChatGPT run: ${message}`);
-    if ((config.debug || process.env.CHATGPT_DEVTOOLS_TRACE === '1') && error instanceof Error && error.stack) {
-      logger(error.stack);
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    const socketClosed = connectionClosedUnexpectedly || isWebSocketClosureError(normalizedError);
+    connectionClosedUnexpectedly = connectionClosedUnexpectedly || socketClosed;
+    if (!socketClosed) {
+      logger(`Failed to complete ChatGPT run: ${normalizedError.message}`);
+      if ((config.debug || process.env.CHATGPT_DEVTOOLS_TRACE === '1') && normalizedError.stack) {
+        logger(normalizedError.stack);
+      }
+      throw normalizedError;
     }
-    throw error;
+    if ((config.debug || process.env.CHATGPT_DEVTOOLS_TRACE === '1') && normalizedError.stack) {
+      logger(`Chrome window closed before completion: ${normalizedError.message}`);
+      logger(normalizedError.stack);
+    }
+    throw new Error('Chrome window closed before Oracle finished. Please keep it open until completion.', {
+      cause: normalizedError,
+    });
   } finally {
     try {
-      await client?.close();
+      if (!connectionClosedUnexpectedly) {
+        await client?.close();
+      }
     } catch {
       // ignore
     }
     removeTerminationHooks?.();
     if (!config.keepBrowser) {
-      try {
-        chrome.kill();
-      } catch {
-        // ignore
+      if (!connectionClosedUnexpectedly) {
+        try {
+          await chrome.kill();
+        } catch {
+          // ignore kill failures
+        }
       }
       await rm(userDataDir, { recursive: true, force: true }).catch(() => undefined);
-      const totalSeconds = (Date.now() - startedAt) / 1000;
-      logger(`Cleanup ${runStatus} • ${totalSeconds.toFixed(1)}s total`);
-    } else {
+      if (!connectionClosedUnexpectedly) {
+        const totalSeconds = (Date.now() - startedAt) / 1000;
+        logger(`Cleanup ${runStatus} • ${totalSeconds.toFixed(1)}s total`);
+      }
+    } else if (!connectionClosedUnexpectedly) {
       logger(`Chrome left running on port ${chrome.port} with profile ${userDataDir}`);
     }
   }
@@ -154,3 +176,13 @@ export {
   waitForAssistantResponse,
   captureAssistantMarkdown,
 } from './pageActions.js';
+
+function isWebSocketClosureError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('websocket connection closed') ||
+    message.includes('websocket is closed') ||
+    message.includes('websocket error') ||
+    message.includes('target closed')
+  );
+}

@@ -31,6 +31,7 @@ import { performSessionRun } from '../src/cli/sessionRunner.js';
 import { attachSession, showStatus } from '../src/cli/sessionDisplay.js';
 import type { ShowStatusOptions } from '../src/cli/sessionDisplay.js';
 import { handleSessionCommand, type StatusOptions } from '../src/cli/sessionCommand.js';
+import { isErrorLogged } from '../src/cli/errorUtils.js';
 
 type EngineMode = 'api' | 'browser';
 
@@ -440,7 +441,9 @@ program.action(async function (this: Command) {
 
 await program.parseAsync(process.argv).catch((error: unknown) => {
   if (error instanceof Error) {
-    console.error(chalk.red('✖'), error.message);
+    if (!isErrorLogged(error)) {
+      console.error(chalk.red('✖'), error.message);
+    }
   } else {
     console.error(chalk.red('✖'), error);
   }

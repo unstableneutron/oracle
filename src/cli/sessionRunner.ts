@@ -5,6 +5,7 @@ import type { RunOracleOptions } from '../oracle.js';
 import { runOracle, OracleResponseError, OracleTransportError, extractResponseMetadata } from '../oracle.js';
 import { runBrowserSessionExecution } from '../browser/sessionRunner.js';
 import { formatResponseMetadata, formatTransportMetadata } from './sessionDisplay.js';
+import { markErrorLogged } from './errorUtils.js';
 
 const isTty = process.stdout.isTTY;
 const dim = (text: string): string => (isTty ? kleur.dim(text) : text);
@@ -78,6 +79,7 @@ export async function performSessionRun({
   } catch (error: unknown) {
     const message = formatError(error);
     log(`ERROR: ${message}`);
+    markErrorLogged(error);
     const responseMetadata = error instanceof OracleResponseError ? error.metadata : undefined;
     const metadataLine = formatResponseMetadata(responseMetadata);
     if (metadataLine) {
