@@ -53,9 +53,9 @@
     "@types/chrome-remote-interface": "^0.31.14",
     "@types/node": "^24.10.1",
     "@vitest/coverage-v8": "4.0.9",
-    "devtools-protocol": "^0.0.1543509",
-    "puppeteer-core": "^23.10.4",
-    "tsx": "^4.20.0",
+    "devtools-protocol": "^0.0.1545402",
+    "puppeteer-core": "^24.30.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^4.0.9"
   },

@@ -39,6 +39,7 @@ export async function handleSessionCommand(
   if (sessionOptions.verboseRender) {
     process.env.ORACLE_VERBOSE_RENDER = '1';
   }
+  const autoRender = sessionOptions.render === undefined && sessionOptions.renderMarkdown === undefined && process.stdout.isTTY;
   const clearRequested = Boolean(sessionOptions.clear || sessionOptions.clean);
   if (clearRequested) {
     if (sessionId) {
@@ -73,7 +74,7 @@ export async function handleSessionCommand(
   if (ignoredFlags.length > 0) {
     console.log(`Ignoring flags on session attach: ${ignoredFlags.join(', ')}`);
   }
-  const renderMarkdown = Boolean(sessionOptions.render || sessionOptions.renderMarkdown);
+  const renderMarkdown = Boolean(sessionOptions.render || sessionOptions.renderMarkdown || autoRender);
   await deps.attachSession(sessionId, { renderMarkdown });
 }
 
