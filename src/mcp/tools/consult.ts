@@ -35,6 +35,7 @@ const consultInputShape = {
   files: z.array(z.string()).default([]),
   model: z.string().optional(),
   engine: z.enum(['api', 'browser']).optional(),
+  browserModelLabel: z.string().optional(),
   search: z.boolean().optional(),
   slug: z.string().optional(),
 } satisfies z.ZodRawShape;
@@ -58,13 +59,14 @@ export function registerConsultTool(server: McpServer): void {
     },
     async (input: unknown) => {
       const textContent = (text: string) => [{ type: 'text' as const, text }];
-      const { prompt, files, model, engine, slug } = consultInputSchema.parse(input);
+      const { prompt, files, model, engine, search, browserModelLabel, slug } = consultInputSchema.parse(input);
       const { config: userConfig } = await loadUserConfig();
       const { runOptions, resolvedEngine } = mapConsultToRunOptions({
         prompt,
         files: files ?? [],
         model,
         engine,
+        search,
         userConfig,
         env: process.env,
       });
@@ -84,7 +86,8 @@ export function registerConsultTool(server: McpServer): void {
 
       let browserConfig: BrowserSessionConfig | undefined;
       if (resolvedEngine === 'browser') {
-        const desiredModelLabel = resolveBrowserModelLabel(model?.trim(), runOptions.model);
+        const preferredLabel = (browserModelLabel ?? model)?.trim();
+        const desiredModelLabel = resolveBrowserModelLabel(preferredLabel, runOptions.model);
         // Keep the browser path minimal; only forward a desired model label for the ChatGPT picker.
         browserConfig = {
           url: CHATGPT_URL,
