@@ -66,3 +66,5 @@ Steps
 3) Validate the pane shows a successful `oracle sessions` tool call (or adjust `--mcp-config` if it reports no tools). When finished, `tmux kill-session -t claude-smoke`.
 
 See `docs/mcp.md` for full tool/resource schemas and behavior.
+
+Tip: The MCP consult tool pulls defaults from your `~/.oracle/config.json` (engine/model/search/prompt suffix/heartbeat/background/filesReport) when the call doesn’t override them.
