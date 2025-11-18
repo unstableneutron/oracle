@@ -13,12 +13,21 @@ import { performSessionRun } from '../../cli/sessionRunner.js';
 import { CHATGPT_URL } from '../../browser/constants.js';
 import { consultInputSchema } from '../types.js';
 
-const consultOutputSchema = z.object({
+// Use raw shapes so the MCP SDK (with its bundled Zod) wraps them and emits valid JSON Schema.
+const consultInputShape = {
+  prompt: z.string().min(1, 'Prompt is required.'),
+  files: z.array(z.string()).default([]),
+  model: z.string().optional(),
+  engine: z.enum(['api', 'browser']).optional(),
+  slug: z.string().optional(),
+} satisfies z.ZodRawShape;
+
+const consultOutputShape = {
   sessionId: z.string(),
   status: z.string(),
   output: z.string(),
   metadata: z.record(z.string(), z.any()).optional(),
-});
+} satisfies z.ZodRawShape;
 
 export function registerConsultTool(server: McpServer): void {
   server.registerTool(
@@ -27,11 +36,9 @@ export function registerConsultTool(server: McpServer): void {
       title: 'Run an oracle session',
       description:
         'Run a one-shot Oracle session (API or browser). Attach files/dirs for context, optional model/engine overrides, and an optional slug. Background handling follows the CLI defaults; browser runs only start when Chrome is available.',
-      // The MCP SDK accepts either Zod schemas or raw shapes; cast to any to avoid versioned type drift.
-      // biome-ignore lint/suspicious/noExplicitAny: SDK typing accepts any JSON or Zod schema.
-      inputSchema: consultInputSchema as any,
-      // biome-ignore lint/suspicious/noExplicitAny: SDK typing accepts any JSON or Zod schema.
-      outputSchema: consultOutputSchema as any,
+      // Cast to any to satisfy SDK typings across differing Zod versions.
+      inputSchema: consultInputShape as any,
+      outputSchema: consultOutputShape as any,
     },
     async (input: unknown) => {
       const textContent = (text: string) => [{ type: 'text' as const, text }];

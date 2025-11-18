@@ -22,11 +22,14 @@ describe('oracle-mcp schemas', () => {
     await client.close().catch(() => {});
   });
 
-  it('fails schema export today (track until fixed)', async () => {
-    await expect(client.listTools({ server: {} }, { timeoutMs: 10_000 })).rejects.toMatchObject({
-      issues: expect.arrayContaining([
-        expect.objectContaining({ expected: 'object' }),
-      ]),
-    });
+  it('exposes object schemas for tools', async () => {
+    const { tools } = await client.listTools({ server: {} }, { timeoutMs: 10_000 });
+    expect(tools.length).toBeGreaterThan(0);
+    for (const tool of tools) {
+      for (const schema of [tool.inputSchema, tool.outputSchema]) {
+        if (!schema) continue;
+        expect(schema.type).toBe('object');
+      }
+    }
   });
 });

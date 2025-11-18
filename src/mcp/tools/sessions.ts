@@ -10,7 +10,15 @@ import {
 } from '../../sessionManager.js';
 import { sessionsInputSchema } from '../types.js';
 
-const sessionsOutputSchema = z.object({
+const sessionsInputShape = {
+  id: z.string().optional(),
+  hours: z.number().optional(),
+  limit: z.number().optional(),
+  includeAll: z.boolean().optional(),
+  detail: z.boolean().optional(),
+} satisfies z.ZodRawShape;
+
+const sessionsOutputShape = {
   entries: z
     .array(
       z.object({
@@ -31,7 +39,7 @@ const sessionsOutputSchema = z.object({
       request: z.record(z.string(), z.any()).optional(),
     })
     .optional(),
-});
+} satisfies z.ZodRawShape;
 
 export function registerSessionsTool(server: McpServer): void {
   server.registerTool(
@@ -40,11 +48,8 @@ export function registerSessionsTool(server: McpServer): void {
       title: 'List or fetch oracle sessions',
       description:
         'List stored sessions (same defaults as `oracle status`) or, with id/slug, return a summary row. Pass detail:true to include metadata, log, and stored request for that session.',
-      // The MCP SDK accepts either Zod schemas or raw shapes; cast to any to avoid versioned type drift.
-      // biome-ignore lint/suspicious/noExplicitAny: SDK typing accepts any JSON or Zod schema.
-      inputSchema: sessionsInputSchema as any,
-      // biome-ignore lint/suspicious/noExplicitAny: SDK typing accepts any JSON or Zod schema.
-      outputSchema: sessionsOutputSchema as any,
+      inputSchema: sessionsInputShape as any,
+      outputSchema: sessionsOutputShape as any,
     },
     async (input: unknown) => {
       const textContent = (text: string) => [{ type: 'text' as const, text }];
