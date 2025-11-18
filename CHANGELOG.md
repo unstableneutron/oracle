@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - **Gemini 3 Pro Support**: Use Google's latest model via `oracle --model gemini`. Requires `GEMINI_API_KEY`.
 - Help text tip: best results come from 6–30 sentences plus key source files; very short prompts tend to be generic.
 - Inline runs now print a single completion line (removed duplicate “Finished” summary), keeping output concise.
+- Gemini runs stay on API (no browser detours), and the CLI logs the resolved model id alongside masked keys when it differs.
 
 ## 1.2.0 — 2025-11-18
 
