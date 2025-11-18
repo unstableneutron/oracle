@@ -665,6 +665,46 @@ describe('oracle utility helpers', () => {
     }
   });
 
+  test('readFiles skips dotfiles by default when expanding directories', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'oracle-readfiles-dot-'));
+    try {
+      const dotFile = path.join(dir, '.env');
+      const visibleFile = path.join(dir, 'app.ts');
+      await writeFile(dotFile, 'SECRET=1', 'utf8');
+      await writeFile(visibleFile, 'console.log(1)', 'utf8');
+
+      const files = await readFiles([dir], { cwd: dir });
+      const basenames = files.map((file) => path.basename(file.path));
+      expect(basenames).toContain('app.ts');
+      expect(basenames).not.toContain('.env');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('readFiles honors .gitignore when present', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'oracle-readfiles-gitignore-'));
+    try {
+      const gitignore = path.join(dir, '.gitignore');
+      const ignoredFile = path.join(dir, 'secret.log');
+      const nestedIgnored = path.join(dir, 'build', 'asset.js');
+      const keptFile = path.join(dir, 'kept.txt');
+      await mkdir(path.join(dir, 'build'), { recursive: true });
+      await writeFile(gitignore, 'secret.log\nbuild/\n', 'utf8');
+      await writeFile(ignoredFile, 'should skip', 'utf8');
+      await writeFile(nestedIgnored, 'ignored build asset', 'utf8');
+      await writeFile(keptFile, 'keep me', 'utf8');
+
+      const files = await readFiles([dir], { cwd: dir });
+      const basenames = files.map((file) => path.basename(file.path));
+      expect(basenames).toContain('kept.txt');
+      expect(basenames).not.toContain('secret.log');
+      expect(basenames).not.toContain('asset.js');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   test('readFiles rejects files larger than 1 MB', async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), 'oracle-readfiles-large-'));
     try {

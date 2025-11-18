@@ -140,7 +140,8 @@ async function expandWithNativeGlob(partitioned: PartitionedFiles, cwd: string):
   const matches = await fg(patterns, {
     cwd,
     absolute: true,
-    dot: true,
+    dot: false, // skip dotfiles/dirs by default; users can opt-in with explicit globs
+    gitignore: true,
     ignore: partitioned.excludePatterns,
     onlyFiles: true,
     followSymbolicLinks: false,
