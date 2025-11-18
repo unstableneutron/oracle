@@ -327,6 +327,17 @@ function buildRunOptions(options: ResolvedCliOptions, overrides: Partial<RunOrac
   };
 }
 
+export function enforceBrowserSearchFlag(
+  runOptions: RunOracleOptions,
+  sessionMode: SessionMode,
+  logFn: (message: string) => void = console.log,
+): void {
+  if (sessionMode === 'browser' && runOptions.search === false) {
+    logFn(chalk.dim('Note: search is not available in browser engine; ignoring search=false.'));
+    runOptions.search = undefined;
+  }
+}
+
 function resolveHeartbeatIntervalMs(seconds: number | undefined): number | undefined {
   if (typeof seconds !== 'number' || seconds <= 0) {
     return undefined;
@@ -539,6 +550,11 @@ async function runRootCommand(options: CliOptions): Promise<void> {
     previewMode: undefined,
     background: userConfig.background ?? resolvedOptions.background,
   });
+  enforceBrowserSearchFlag(baseRunOptions, sessionMode, console.log);
+  if (sessionMode === 'browser' && baseRunOptions.search === false) {
+    console.log(chalk.dim('Note: search is not available in browser engine; ignoring search=false.'));
+    baseRunOptions.search = undefined;
+  }
   const sessionMeta = await initializeSession(
     {
       ...baseRunOptions,
