@@ -110,7 +110,9 @@ export async function launchTui({ version }: LaunchTuiOptions): Promise<void> {
       if (!showingOlder && olderTotal > 0 && key.name === 'pagedown') {
         shortcutSelection = '__older__';
         promptUi.ui?.close();
-      } else if (showingOlder) {
+      }
+      // biome-ignore lint/nursery/noUnnecessaryConditions: runtime key handling needs this guard
+      if (showingOlder) {
         if (key.name === 'pagedown' && hasOlderNext) {
           shortcutSelection = '__more__';
           promptUi.ui?.close();
@@ -122,7 +124,7 @@ export async function launchTui({ version }: LaunchTuiOptions): Promise<void> {
     };
     input?.on('keypress', onKeypress);
 
-    let selection: string;
+    let selection: string | undefined;
     try {
       ({ selection } = await prompt);
     } catch (error) {
@@ -130,13 +132,14 @@ export async function launchTui({ version }: LaunchTuiOptions): Promise<void> {
         selection = shortcutSelection;
       } else {
         input?.off('keypress', onKeypress);
-        throw error;
+        console.error(chalk.red('Paging failed; returning to recent list.'), error instanceof Error ? error.message : error);
+        showingOlder = false;
+        olderOffset = 0;
+        continue;
       }
     }
     input?.off('keypress', onKeypress);
-    if (shortcutSelection) {
-      selection = shortcutSelection;
-    }
+    selection = shortcutSelection ?? selection ?? '__reset__';
 
     if (selection === '__exit__') {
       console.log(chalk.green('🧿 Closing the book. See you next prompt.'));
