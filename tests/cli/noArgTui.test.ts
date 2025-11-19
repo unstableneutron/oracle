@@ -15,6 +15,7 @@ describe('zero-arg TUI entry', () => {
     process.env.ORACLE_FORCE_TUI = '1';
 
     await import('../../bin/oracle-cli.js');
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(launchTuiMock).toHaveBeenCalled();
 
