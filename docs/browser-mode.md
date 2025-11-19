@@ -44,6 +44,57 @@
 
 All options are persisted with the session so reruns (`oracle exec <id>`) reuse the same automation settings.
 
+## Remote Chrome Sessions (headless/server workflows)
+
+Oracle can reuse an already-running Chrome/Edge instance on another machine by tunneling over the Chrome DevTools Protocol. This is handy when:
+
+- Your CLI runs on a headless server (Linux/macOS CI, remote mac minis, etc.) but you want the browser UI to live on a desktop where you can see uploads or respond to Captcha challenges.
+- You want to keep a single signed-in profile open (e.g., Windows VM with company SSO) while sending prompts from other hosts.
+
+### 1. Start Chrome with remote debugging enabled
+
+On the machine that should host the browser window:
+
+```bash
+google-chrome \
+  --remote-debugging-port=9222 \
+  --remote-debugging-address=0.0.0.0 \
+  --user-data-dir=/path/to/profile \
+  --profile-directory='Default'
+```
+
+Notes:
+
+- Any Chromium flavor works (Chrome, Edge, Vivaldi, etc.)—just ensure CDP is exposed on a reachable host:port. Linux distributions often call the binary `google-chrome-stable`. On macOS you can run `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`.
+- `--remote-debugging-address=0.0.0.0` is required if the CLI connects from another machine. Lock it down behind a VPN or SSH tunnel if the network is untrusted.
+- Keep this browser window open and signed into ChatGPT; Oracle will reuse that session and **will not** copy cookies over the wire.
+
+### 2. Point Oracle at the remote browser
+
+From the machine running `oracle`:
+
+```bash
+oracle --engine browser \
+  --remote-chrome 192.168.1.10:9222 \
+  --prompt "Summarize the latest incident doc" \
+  --file docs/incidents/latest.md
+```
+
+Key behavior:
+
+- Use IPv6 by wrapping the host in brackets, e.g. `--remote-chrome "[2001:db8::1]:9222"`.
+- Local-only flags like `--browser-headless`, `--browser-hide-window`, `--browser-keep-browser`, and `--browser-chrome-path` are ignored because Oracle no longer launches Chrome. You still get verbose logging, model switching, attachment uploads, and markdown capture.
+- Cookie sync is skipped automatically (the remote browser already has cookies). If you need inline cookies, use them on the machine that’s actually running Chrome.
+- Attachments are transferred via CDP: Oracle reads each file locally, base64-encodes it, and uses `DataTransfer` inside the remote browser to populate the upload field. Files larger than 20 MB are rejected to keep CDP messages reasonable.
+- When the remote WebSocket disconnects, Oracle errors with “Remote Chrome connection lost…” so you can re-run after restarting the browser.
+
+### 3. Troubleshooting
+
+- Run `scripts/test-remote-chrome.ts <host> [port]` to sanity-check connectivity (`npx tsx scripts/test-remote-chrome.ts my-host 9222`).
+- If you target IPv6 without brackets (e.g., `2001:db8::1:9222`), the CLI rejects it—wrap the address like `[2001:db8::1]:9222`.
+- Ensure firewalls allow inbound TCP to the debugging port and that you’re not behind a captive proxy stripping WebSocket upgrades.
+- Because we do not control the remote lifecycle, Chrome stays running after the session. Shut it down manually when you’re done or remove `--remote-debugging-port` to stop exposing CDP.
+
 ## Limitations / Follow-Up Plan
 
 - **Attachment lifecycle** – every `--file` path is uploaded separately so ChatGPT can ingest the original filenames/content. The automation waits for the uploads to finish (send button enabled, no upload indicators) before hitting submit. Follow-up work: expose upload status in session logs. When upload automation flakes, use `--browser-inline-files` to fall back to pasting file contents directly.

@@ -268,7 +268,10 @@ program
     new Option('--browser-allow-cookie-errors', 'Continue even if Chrome cookies cannot be copied.').hideHelp(),
   )
   .addOption(
-    new Option('--remote-chrome <host:port>', 'Connect to remote Chrome DevTools Protocol (e.g., 192.168.1.10:9222).'),
+    new Option(
+      '--remote-chrome <host:port>',
+      'Connect to remote Chrome DevTools Protocol (e.g., 192.168.1.10:9222 or [2001:db8::1]:9222 for IPv6).',
+    ),
   )
   .addOption(
     new Option('--browser-inline-files', 'Paste files directly into the ChatGPT composer instead of uploading attachments.').default(false),

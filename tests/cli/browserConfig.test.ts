@@ -84,6 +84,49 @@ describe('buildBrowserConfig', () => {
     });
     expect(config.desiredModel).toBe('ChatGPT 5.1 Instant');
   });
+
+  test('parses remoteChrome host targets', async () => {
+    const config = await buildBrowserConfig({
+      model: 'gpt-5-pro',
+      remoteChrome: 'remote-host:9333',
+    });
+    expect(config.remoteChrome).toEqual({ host: 'remote-host', port: 9_333 });
+  });
+
+  test('accepts IPv6 remoteChrome targets wrapped in brackets', async () => {
+    const config = await buildBrowserConfig({
+      model: 'gpt-5-pro',
+      remoteChrome: '[2001:db8::1]:9222',
+    });
+    expect(config.remoteChrome).toEqual({ host: '2001:db8::1', port: 9_222 });
+  });
+
+  test('rejects malformed remoteChrome targets', async () => {
+    await expect(
+      buildBrowserConfig({
+        model: 'gpt-5-pro',
+        remoteChrome: 'just-a-host',
+      }),
+    ).rejects.toThrow(/host:port/i);
+  });
+
+  test('rejects remoteChrome IPv6 without brackets', async () => {
+    await expect(
+      buildBrowserConfig({
+        model: 'gpt-5-pro',
+        remoteChrome: '2001:db8::1:9222',
+      }),
+    ).rejects.toThrow(/Wrap IPv6 addresses/i);
+  });
+
+  test('rejects out-of-range remoteChrome ports', async () => {
+    await expect(
+      buildBrowserConfig({
+        model: 'gpt-5-pro',
+        remoteChrome: 'server:70000',
+      }),
+    ).rejects.toThrow(/between 1 and 65535/i);
+  });
 });
 
 describe('resolveBrowserModelLabel', () => {

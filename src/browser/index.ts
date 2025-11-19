@@ -263,7 +263,11 @@ async function runRemoteBrowserMode(
   logger: BrowserLogger,
   options: BrowserRunOptions,
 ): Promise<BrowserRunResult> {
-  const { host, port } = config.remoteChrome!;
+  const remoteChromeConfig = config.remoteChrome;
+  if (!remoteChromeConfig) {
+    throw new Error('Remote Chrome configuration missing. Pass --remote-chrome <host:port> to use this mode.');
+  }
+  const { host, port } = remoteChromeConfig;
   logger(`Connecting to remote Chrome at ${host}:${port}`);
 
   let client: ChromeClient | null = null;

@@ -53,21 +53,7 @@ export async function buildBrowserConfig(options: BrowserFlagOptions): Promise<B
 
   let remoteChrome: { host: string; port: number } | undefined;
   if (options.remoteChrome) {
-    const parts = options.remoteChrome.split(':');
-    if (parts.length === 2) {
-      const port = Number.parseInt(parts[1], 10);
-
-      // Validate port is a valid number in valid range
-      if (!Number.isFinite(port) || port <= 0 || port > 65535) {
-        throw new Error(
-          `Invalid remote-chrome port: "${parts[1]}". Expected a number between 1 and 65535.`
-        );
-      }
-
-      remoteChrome = { host: parts[0], port };
-    } else {
-      throw new Error(`Invalid remote-chrome format: ${options.remoteChrome}. Expected host:port`);
-    }
+    remoteChrome = parseRemoteChromeTarget(options.remoteChrome);
   }
 
   return {
@@ -107,6 +93,49 @@ export function resolveBrowserModelLabel(input: string | undefined, model: Model
     return mapModelToBrowserLabel(model);
   }
   return trimmed;
+}
+
+function parseRemoteChromeTarget(raw: string): { host: string; port: number } {
+  const target = raw.trim();
+  if (!target) {
+    throw new Error('Invalid remote-chrome value: expected host:port but received an empty string.');
+  }
+
+  const ipv6Match = target.match(/^\[(.+)]:(\d+)$/);
+  let host: string | undefined;
+  let portSegment: string | undefined;
+
+  if (ipv6Match) {
+    host = ipv6Match[1]?.trim();
+    portSegment = ipv6Match[2]?.trim();
+  } else {
+    const lastColon = target.lastIndexOf(':');
+    if (lastColon === -1) {
+      throw new Error(
+        `Invalid remote-chrome format: ${target}. Expected host:port (IPv6 must use [host]:port notation).`
+      );
+    }
+    host = target.slice(0, lastColon).trim();
+    portSegment = target.slice(lastColon + 1).trim();
+    if (host.includes(':')) {
+      throw new Error(
+        `Invalid remote-chrome format: ${target}. Wrap IPv6 addresses in brackets, e.g. --remote-chrome "[2001:db8::1]:9222".`
+      );
+    }
+  }
+
+  if (!host) {
+    throw new Error(
+      `Invalid remote-chrome format: ${target}. Host portion is missing; expected host:port.`
+    );
+  }
+  const port = Number.parseInt(portSegment ?? '', 10);
+  if (!Number.isFinite(port) || port <= 0 || port > 65_535) {
+    throw new Error(
+      `Invalid remote-chrome port: "${portSegment ?? ''}". Expected a number between 1 and 65535.`
+    );
+  }
+  return { host, port };
 }
 
 function parseCookieNames(raw?: string | null): string[] | undefined {

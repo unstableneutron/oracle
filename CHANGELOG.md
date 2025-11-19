@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## 1.3.1 — Unreleased
 
 ### Added
+- Remote Chrome automation: pass `--remote-chrome <host:port>` (IPv6 supported via `[host]:port`) to reuse an existing browser session on another machine, including remote attachment uploads and improved validation errors.
 - Browser engine can now target Chromium/Edge by pairing `--browser-chrome-path` with the new `--browser-cookie-path` (also configurable via `browser.chromePath` / `browser.chromeCookiePath`). See the new [docs/chromium-forks.md](docs/chromium-forks.md) for OS-specific paths and setup steps.
 
 ### Changed
@@ -12,14 +13,14 @@ All notable changes to this project will be documented in this file.
 - Reject prompts shorter than 20 characters with a friendly hint (prevents accidental single-character runs). Override via ORACLE_MIN_PROMPT_CHARS for automated environments.
 - Browser engine default timeout bumped from 15m (900s) to 20m (1200s) so long GPT-5 Pro responses don’t get cut off; CLI docs/help text now reflect the new ceiling.
 - Duration flags such as `--browser-timeout`/`--browser-input-timeout` now accept chained units (`1h2m10s`, `3m10s`, etc.) plus `h`, `m`, `s`, or `ms` suffixes, matching the formats we already log.
-- GPT-5 Pro API runs now get a 60-minute automatic timeout (was 20m) and the “zombie” detector waits the same hour before flipping stuck sessions to `error`; CLI messaging/docs updated accordingly.
+- GPT-5 Pro API runs now default to a 60-minute timeout (was 20m) and the “zombie” detector waits the same hour before marking sessions as `error`; CLI messaging/docs updated accordingly so a single “auto” limit covers both behaviors.
 
 ## 1.3.0 — 2025-11-19
 
 ### Added
 - Native Azure OpenAI support! Set `AZURE_OPENAI_ENDPOINT` (plus `AZURE_OPENAI_API_KEY` and optionally `AZURE_OPENAI_DEPLOYMENT`/`AZURE_OPENAI_API_VERSION`) or use the new CLI flags (`--azure-endpoint`, `--azure-deployment`, etc.) to switch automatically to the Azure client.
 - **Gemini 3 Pro Support**: Use Google's latest model via `oracle --model gemini`. Requires `GEMINI_API_KEY`.
-- Configurable API timeout: `--timeout <seconds|auto>` (initially auto = 20m for gpt-5-pro, 30s for other models — extended to 60m for Pro in 1.3.1). Enforced for streaming and background runs.
+- Configurable API timeout: `--timeout <seconds|auto>` (auto = 20m for most models, 60m for gpt-5-pro as of 1.3.1). Enforced for streaming and background runs.
 - OpenAI-compatible base URL override: `--base-url` (or `apiBaseUrl` in config / `OPENAI_BASE_URL`) lets you target LiteLLM proxies, Azure gateways, and other compatible hosts.
 - Help text tip: best results come from 6–30 sentences plus key source files; very short prompts tend to be generic.
 - Browser inline cookies: `--browser-inline-cookies[(-file)]` (or env) accepts JSON/base64 payloads, auto-loads `~/.oracle/cookies.{json,base64}`, adds a cookie allowlist (`--browser-cookie-names`), and dry-run now reports whether cookies come from Chrome or inline sources.
