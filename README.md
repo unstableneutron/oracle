@@ -38,6 +38,12 @@ npx -y @steipete/oracle -p "Review the TS data layer" --file "src/**/*.ts" --fil
 # Mixed glob + single file
 npx -y @steipete/oracle -p "Audit data layer" --file "src/**/*.ts" --file README.md
 
+# Dry-run (no API call) with summary estimate
+oracle --dry-run summary -p "Check release notes" --file docs/release-notes.md
+
+# Show the exact model id (useful for Gemini preview aliases)
+oracle --model gemini-3-pro --show-model-id -p "Quick smoke test"
+
 # Alternate base URL (LiteLLM, Azure, self-hosted gateways)
 OPENAI_API_KEY=sk-... oracle --base-url https://litellm.example.com/v1 -p "Summarize the risk register"
 
@@ -92,7 +98,7 @@ Put per-user defaults in `~/.oracle/config.json` (parsed as JSON5, so comments/t
 | `--base-url <url>` | Point the API engine at any OpenAI-compatible endpoint (LiteLLM, Azure, etc.). |
 | `--azure-endpoint <url>` | Use Azure OpenAI (switches client automatically). |
 | `--files-report` | Print per-file token usage. |
-| `--preview [summary\|json\|full]` | Inspect the request without sending. |
+| `--dry-run [summary\|json\|full]` | Inspect the request without sending (alias: `--preview`). |
 
 See [docs/openai-endpoints.md](docs/openai-endpoints.md) for advanced Azure/LiteLLM configuration.
 

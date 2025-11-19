@@ -191,9 +191,19 @@ program
   )
   .option('--dry-run', 'Validate inputs and show token estimates without calling the model.', false)
   .addOption(
-    new Option('--preview [mode]', 'Preview the request without calling the API (summary | json | full).')
+    new Option(
+      '--preview [mode]',
+      '(alias) Preview the request without calling the model (summary | json | full). Deprecated: use --dry-run instead.',
+    )
+      .hideHelp()
       .choices(['summary', 'json', 'full'])
       .preset('summary'),
+  )
+  .addOption(
+    new Option('--dry-run [mode]', 'Preview without calling the model (summary | json | full).')
+      .choices(['summary', 'json', 'full'])
+      .preset('summary')
+      .default(false),
   )
   .addOption(new Option('--exec-session <id>').hideHelp())
   .addOption(new Option('--session <id>').hideHelp())
@@ -437,7 +447,7 @@ async function runRootCommand(options: CliOptions): Promise<void> {
     program.help({ error: false });
     return;
   }
-  const previewMode = resolvePreviewMode(options.preview);
+  const previewMode = resolvePreviewMode(options.dryRun || options.preview);
 
   if (userCliArgs.length === 0) {
     if (tuiEnabled()) {
@@ -452,9 +462,6 @@ async function runRootCommand(options: CliOptions): Promise<void> {
   if (options.debugHelp) {
     printDebugHelp(program.name());
     return;
-  }
-  if (options.dryRun && previewMode) {
-    throw new Error('--dry-run cannot be combined with --preview.');
   }
   if (options.dryRun && options.renderMarkdown) {
     throw new Error('--dry-run cannot be combined with --render-markdown.');
@@ -557,7 +564,7 @@ async function runRootCommand(options: CliOptions): Promise<void> {
 
   if (previewMode) {
     if (!options.prompt) {
-      throw new Error('Prompt is required when using --preview.');
+      throw new Error('Prompt is required when using --dry-run/preview.');
     }
     if (userConfig.promptSuffix) {
       options.prompt = `${options.prompt.trim()}\n${userConfig.promptSuffix}`;
@@ -577,7 +584,30 @@ async function runRootCommand(options: CliOptions): Promise<void> {
       );
       return;
     }
-    await runOracle(runOptions, { log: console.log, write: (chunk: string) => process.stdout.write(chunk) });
+    // API dry-run/preview path
+    if (previewMode === 'summary') {
+      await runDryRunSummary(
+        {
+          engine,
+          runOptions,
+          cwd: process.cwd(),
+          version: VERSION,
+          log: console.log,
+        },
+        {},
+      );
+      return;
+    }
+    await runDryRunSummary(
+      {
+        engine,
+        runOptions,
+        cwd: process.cwd(),
+        version: VERSION,
+        log: console.log,
+      },
+      {},
+    );
     return;
   }
 

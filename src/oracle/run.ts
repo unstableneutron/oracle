@@ -106,6 +106,7 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
   const searchEnabled = options.search !== false;
   logVerbose(`cwd: ${cwd}`);
   let pendingNoFilesTip: string | null = null;
+  let pendingShortPromptTip: string | null = null;
   if (files.length > 0) {
     const displayPaths = files
       .map((file) => path.relative(cwd, file.path) || file.path)
@@ -119,6 +120,11 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
       pendingNoFilesTip =
         'Tip: no files attached — Oracle works best with project context. Add files via --file path/to/code or docs.';
     }
+  }
+  const shortPrompt = (options.prompt?.trim().length ?? 0) < 80;
+  if (!isPreview && shortPrompt) {
+    pendingShortPromptTip =
+      'Tip: brief prompts often yield generic answers — aim for 6–30 sentences and attach key files.';
   }
   const fileTokenInfo = getFileTokenStats(files, {
     cwd,
@@ -175,6 +181,9 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
     }
     if (pendingNoFilesTip) {
       log(dim(pendingNoFilesTip));
+    }
+    if (pendingShortPromptTip) {
+      log(dim(pendingShortPromptTip));
     }
     if (options.model === 'gpt-5-pro') {
       log(dim('Pro is thinking, this can take up to 30 minutes...'));

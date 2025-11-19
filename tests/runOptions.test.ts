@@ -86,7 +86,7 @@ describe('resolveRunOptionsFromConfig', () => {
   it('forces api engine for gemini when engine is auto-detected', () => {
     const { runOptions, resolvedEngine } = resolveRunOptionsFromConfig({
       prompt: basePrompt,
-      model: 'gemini-3-pro-thinking',
+      model: 'gemini-3-pro',
       env: {}, // no OPENAI_API_KEY, would normally choose browser
     });
     expect(resolvedEngine).toBe('api');
@@ -97,7 +97,7 @@ describe('resolveRunOptionsFromConfig', () => {
     expect(() =>
       resolveRunOptionsFromConfig({
         prompt: basePrompt,
-        model: 'gemini-3-pro-thinking',
+        model: 'gemini-3-pro',
         engine: 'browser',
       }),
     ).toThrow('Gemini is only supported via API. Use --engine api.');
