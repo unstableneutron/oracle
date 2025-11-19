@@ -43,7 +43,7 @@ describe('syncCookies', () => {
       'https://chatgpt.com',
       null,
       logger,
-      true,
+      { allowErrors: true },
     );
     expect(applied).toBe(0);
     expect(logger).toHaveBeenCalledWith(expect.stringContaining('Cookie sync failed (continuing with override)'));

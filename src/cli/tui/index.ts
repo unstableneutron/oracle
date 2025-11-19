@@ -46,6 +46,8 @@ export async function launchTui({ version }: LaunchTuiOptions): Promise<void> {
   for (;;) {
     const { recent, older, olderTotal } = await fetchSessionBuckets(olderOffset);
     const choices: Array<SessionChoice | inquirer.Separator> = [];
+    const hasOlderPrev = olderOffset > 0;
+    const hasOlderNext = olderOffset + PAGE_SIZE < olderTotal;
 
     if (!showingOlder) {
       if (recent.length > 0) {
@@ -71,10 +73,10 @@ export async function launchTui({ version }: LaunchTuiOptions): Promise<void> {
     if (!showingOlder && olderTotal > 0) {
       choices.push({ name: 'Load older', value: '__older__' });
     } else {
-      if (olderOffset > 0) {
+      if (hasOlderPrev) {
         choices.push({ name: 'Page up', value: '__prev__' });
       }
-      if (olderOffset + PAGE_SIZE < olderTotal) {
+      if (hasOlderNext) {
         choices.push({ name: 'Page down', value: '__more__' });
       }
       choices.push({ name: 'Back to recent', value: '__reset__' });
@@ -82,7 +84,8 @@ export async function launchTui({ version }: LaunchTuiOptions): Promise<void> {
 
     choices.push({ name: 'Exit', value: '__exit__' });
 
-    const { selection } = await inquirer.prompt<{ selection: string }>([
+    let shortcutSelection: string | null = null;
+    const prompt = inquirer.prompt<{ selection: string }>([
       {
         name: 'selection',
         type: 'list',
@@ -91,6 +94,41 @@ export async function launchTui({ version }: LaunchTuiOptions): Promise<void> {
         pageSize: 16,
       },
     ]);
+
+    const promptWithUi = prompt as unknown as {
+      ui?: { rl: import('readline').Interface; close: () => void };
+    };
+    const rl = promptWithUi.ui?.rl;
+    const rlInput = (rl as unknown as { input?: NodeJS.ReadStream })?.input;
+    const onKeypress = (_: unknown, key: { name?: string }): void => {
+      if (!key?.name) return;
+      if (!showingOlder && olderTotal > 0 && key.name === 'pagedown') {
+        shortcutSelection = '__older__';
+        promptWithUi.ui?.close();
+      } else if (showingOlder) {
+        if (key.name === 'pagedown' && hasOlderNext) {
+          shortcutSelection = '__more__';
+          promptWithUi.ui?.close();
+        } else if (key.name === 'pageup') {
+          shortcutSelection = hasOlderPrev ? '__prev__' : '__reset__';
+          promptWithUi.ui?.close();
+        }
+      }
+    };
+    rlInput?.on('keypress', onKeypress);
+
+    let selection: string;
+    try {
+      ({ selection } = await prompt);
+    } catch (error) {
+      if (shortcutSelection) {
+        selection = shortcutSelection;
+      } else {
+        rlInput?.off('keypress', onKeypress);
+        throw error;
+      }
+    }
+    rlInput?.off('keypress', onKeypress);
 
     if (selection === '__exit__') {
       console.log(chalk.green('🧿 Closing the book. See you next prompt.'));
