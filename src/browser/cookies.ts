@@ -11,21 +11,23 @@ export async function syncCookies(
   url: string,
   profile: string | null | undefined,
   logger: BrowserLogger,
-  allowErrors = false,
+  options: {
+    allowErrors?: boolean;
+    filterNames?: string[] | null;
+    inlineCookies?: CookieParam[] | null;
+  } = {},
 ) {
+  const { allowErrors = false, filterNames, inlineCookies } = options;
   try {
-    const cookies = await readChromeCookies(url, profile);
+    const cookies = inlineCookies?.length
+      ? normalizeInlineCookies(inlineCookies, new URL(url).hostname)
+      : await readChromeCookies(url, profile, filterNames ?? undefined);
     if (!cookies.length) {
       return 0;
     }
     let applied = 0;
     for (const cookie of cookies) {
-      const cookieWithUrl: CookieParam = { ...cookie };
-      if (!cookieWithUrl.domain || cookieWithUrl.domain === 'localhost') {
-        cookieWithUrl.url = url;
-      } else if (!cookieWithUrl.domain.startsWith('.')) {
-        cookieWithUrl.url = `https://${cookieWithUrl.domain}`;
-      }
+      const cookieWithUrl = attachUrl(cookie, url);
       try {
         const result = await Network.setCookie(cookieWithUrl);
         if (result?.success) {
@@ -47,10 +49,15 @@ export async function syncCookies(
   }
 }
 
-async function readChromeCookies(url: string, profile?: string | null): Promise<CookieParam[]> {
+async function readChromeCookies(
+  url: string,
+  profile?: string | null,
+  filterNames?: string[],
+): Promise<CookieParam[]> {
   const chromeModule = await loadChromeCookiesModule();
   const urlsToCheck = Array.from(new Set([stripQuery(url), ...COOKIE_URLS]));
   const merged = new Map<string, CookieParam>();
+  const allowlist = normalizeCookieNames(filterNames);
   for (const candidateUrl of urlsToCheck) {
     let rawCookies: unknown;
     rawCookies = await chromeModule.getCookiesPromised(candidateUrl, 'puppeteer', profile ?? undefined);
@@ -60,7 +67,7 @@ async function readChromeCookies(url: string, profile?: string | null): Promise<
     const fallbackHostname = new URL(candidateUrl).hostname;
     for (const cookie of rawCookies) {
       const normalized = normalizeCookie(cookie as PuppeteerCookie, fallbackHostname);
-      if (!normalized) {
+      if (!normalized || (allowlist && !allowlist.has(normalized.name))) {
         continue;
       }
       const key = `${normalized.domain ?? fallbackHostname}:${normalized.name}`;
@@ -91,6 +98,47 @@ function normalizeCookie(cookie: PuppeteerCookie, fallbackHost: string): CookieP
     secure,
     httpOnly,
   } satisfies CookieParam;
+}
+
+function normalizeInlineCookies(rawCookies: CookieParam[], fallbackHost: string): CookieParam[] {
+  const merged = new Map<string, CookieParam>();
+  for (const cookie of rawCookies) {
+    if (!cookie?.name) continue;
+    const normalized: CookieParam = {
+      ...cookie,
+      name: cookie.name,
+      value: cookie.value ?? '',
+      domain: cookie.domain ?? fallbackHost,
+      path: cookie.path ?? '/',
+      expires: normalizeExpiration(cookie.expires),
+      secure: cookie.secure ?? true,
+      httpOnly: cookie.httpOnly ?? false,
+    };
+    const key = `${normalized.domain ?? fallbackHost}:${normalized.name}`;
+    if (!merged.has(key)) {
+      merged.set(key, normalized);
+    }
+  }
+  return Array.from(merged.values());
+}
+
+function normalizeCookieNames(names?: string[] | null): Set<string> | null {
+  if (!names || names.length === 0) {
+    return null;
+  }
+  return new Set(names.map((name) => name.trim()).filter(Boolean));
+}
+
+function attachUrl(cookie: CookieParam, fallbackUrl: string): CookieParam {
+  const cookieWithUrl: CookieParam = { ...cookie };
+  if (!cookieWithUrl.url) {
+    if (!cookieWithUrl.domain || cookieWithUrl.domain === 'localhost') {
+      cookieWithUrl.url = fallbackUrl;
+    } else if (!cookieWithUrl.domain.startsWith('.')) {
+      cookieWithUrl.url = `https://${cookieWithUrl.domain}`;
+    }
+  }
+  return cookieWithUrl;
 }
 
 function stripQuery(url: string): string {

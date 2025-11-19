@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import type { WriteStream } from 'node:fs';
+import type { CookieParam } from './browser/types.js';
 import type { TransportFailureReason, AzureOptions } from './oracle.js';
 
 export type SessionMode = 'api' | 'browser';
@@ -14,6 +15,8 @@ export interface BrowserSessionConfig {
   timeoutMs?: number;
   inputTimeoutMs?: number;
   cookieSync?: boolean;
+  cookieNames?: string[] | null;
+  inlineCookies?: CookieParam[] | null;
   headless?: boolean;
   keepBrowser?: boolean;
   hideWindow?: boolean;

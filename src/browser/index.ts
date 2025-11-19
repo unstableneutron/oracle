@@ -89,20 +89,26 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
     await Network.clearBrowserCookies();
 
     if (config.cookieSync) {
-      logger(
-        'Heads-up: macOS may prompt for your Keychain password to read Chrome cookies; approve it to stay signed in or rerun with --browser-no-cookie-sync / --browser-allow-cookie-errors.',
-      );
-      const cookieCount = await syncCookies(
-        Network,
-        config.url,
-        config.chromeProfile,
-        logger,
-        config.allowCookieErrors ?? false,
-      );
+      if (!config.inlineCookies) {
+        logger(
+          'Heads-up: macOS may prompt for your Keychain password to read Chrome cookies; approve it to stay signed in or rerun with --browser-no-cookie-sync / --browser-allow-cookie-errors.',
+        );
+      } else {
+        logger('Applying inline cookies (skipping Chrome profile read)');
+      }
+      const cookieCount = await syncCookies(Network, config.url, config.chromeProfile, logger, {
+        allowErrors: config.allowCookieErrors ?? false,
+        filterNames: config.cookieNames ?? undefined,
+        inlineCookies: config.inlineCookies ?? undefined,
+      });
       logger(
         cookieCount > 0
-          ? `Copied ${cookieCount} cookies from Chrome profile ${config.chromeProfile ?? 'Default'}`
-          : 'No Chrome cookies found; continuing without session reuse',
+          ? config.inlineCookies
+            ? `Applied ${cookieCount} inline cookies`
+            : `Copied ${cookieCount} cookies from Chrome profile ${config.chromeProfile ?? 'Default'}`
+          : config.inlineCookies
+            ? 'No inline cookies applied; continuing without session reuse'
+            : 'No Chrome cookies found; continuing without session reuse',
       );
     } else {
       logger('Skipping Chrome cookie sync (--browser-no-cookie-sync)');

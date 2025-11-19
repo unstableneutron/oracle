@@ -42,6 +42,8 @@ export interface BrowserAutomationConfig {
   timeoutMs?: number;
   inputTimeoutMs?: number;
   cookieSync?: boolean;
+  cookieNames?: string[] | null;
+  inlineCookies?: CookieParam[] | null;
   headless?: boolean;
   keepBrowser?: boolean;
   hideWindow?: boolean;
