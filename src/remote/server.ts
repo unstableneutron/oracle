@@ -221,25 +221,6 @@ export async function serveRemote(options: RemoteServerOptions = {}): Promise<vo
   });
 }
 
-function formatReachableAddresses(host: string, port: number): string[] {
-  const addresses = new Set<string>();
-  if (host === '0.0.0.0' || host === '::') {
-    addresses.add(`http://127.0.0.1:${port}`);
-    addresses.add(`http://localhost:${port}`);
-    const nets = os.networkInterfaces();
-    for (const entries of Object.values(nets)) {
-      for (const entry of entries ?? []) {
-        if (entry.family === 'IPv4' && !entry.internal && entry.address) {
-          addresses.add(`http://${entry.address}:${port}`);
-        }
-      }
-    }
-  } else {
-    addresses.add(`http://${host}:${port}`);
-  }
-  return Array.from(addresses);
-}
-
 async function readRequestBody(req: http.IncomingMessage): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
@@ -271,6 +252,40 @@ function formatSocket(req: http.IncomingMessage): string {
   const host = socket.remoteAddress ?? 'unknown';
   const port = socket.remotePort ?? '0';
   return `${host}:${port}`;
+}
+
+function formatReachableAddresses(bindAddress: string, port: number): string[] {
+  const addresses: string[] = [];
+  if (bindAddress && bindAddress !== '::' && bindAddress !== '0.0.0.0') {
+    addresses.push(`${bindAddress}:${port}`);
+  }
+  try {
+    const interfaces = os.networkInterfaces();
+    for (const entries of Object.values(interfaces)) {
+      if (!entries) continue;
+      const list = entries as Array<{ family: string | number; address: string; internal?: boolean }>;
+      for (const entry of list) {
+        if (!entry || entry.internal) continue;
+        const family =
+          typeof entry.family === 'string'
+            ? entry.family
+            : entry.family === 4
+              ? 'IPv4'
+              : entry.family === 6
+                ? 'IPv6'
+                : '';
+        if (family === 'IPv4') {
+          addresses.push(`${entry.address}:${port}`);
+        } else if (family === 'IPv6') {
+          addresses.push(`[${entry.address}]:${port}`);
+        }
+      }
+    }
+  } catch {
+    // network interface probing can fail in locked-down environments; ignore
+  }
+  // de-dup
+  return Array.from(new Set(addresses));
 }
 
 async function loadLocalChatgptCookies(logger: (message: string) => void, targetUrl: string): Promise<CookieParam[] | null> {

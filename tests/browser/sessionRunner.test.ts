@@ -46,6 +46,37 @@ describe('runBrowserSessionExecution', () => {
     expect(log).toHaveBeenCalled();
   });
 
+  test('suppresses automation noise when not verbose', async () => {
+    const log = vi.fn();
+    const noisyLogger = vi.fn();
+    await runBrowserSessionExecution(
+      {
+        runOptions: { ...baseRunOptions, verbose: false },
+        browserConfig: baseConfig,
+        cwd: '/repo',
+        log,
+      },
+      {
+        assemblePrompt: async () => ({
+          markdown: 'prompt',
+          composerText: 'prompt',
+          estimatedInputTokens: 5,
+          attachments: [],
+          inlineFileCount: 0,
+          tokenEstimateIncludesInlineFiles: false,
+        }),
+        executeBrowser: async ({ log: automationLog }) => {
+          automationLog?.('Prompt textarea ready');
+          noisyLogger();
+          return { answerText: 'text', answerMarkdown: 'markdown', tookMs: 1, answerTokens: 1, answerChars: 4 };
+        },
+      },
+    );
+    expect(log.mock.calls.some((call) => /launching browser mode/.test(String(call[0])))).toBe(true);
+    expect(log.mock.calls.some((call) => /Prompt textarea ready/.test(String(call[0])))).toBe(false);
+    expect(noisyLogger).toHaveBeenCalled(); // ensure executeBrowser ran
+  });
+
   test('respects verbose logging', async () => {
     const log = vi.fn();
     await runBrowserSessionExecution(

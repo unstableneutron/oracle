@@ -72,12 +72,13 @@ export async function runBrowserSessionExecution(
     log(chalk.yellow(`[browser] Packed ${promptArtifacts.bundled.originalCount} files into 1 bundle.`));
   }
   const automationLogger: BrowserLogger = ((message?: string) => {
+    if (!runOptions.verbose) return;
     if (typeof message === 'string') {
       log(message);
     }
   }) as BrowserLogger;
   automationLogger.verbose = Boolean(runOptions.verbose);
-  automationLogger.sessionLog = log;
+  automationLogger.sessionLog = runOptions.verbose ? log : (() => {});
 
   log(headerLine);
   log(chalk.dim('This run can take up to an hour (usually ~10 minutes).'));
