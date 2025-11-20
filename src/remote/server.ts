@@ -255,12 +255,15 @@ function formatSocket(req: http.IncomingMessage): string {
 }
 
 function formatReachableAddresses(bindAddress: string, port: number): string[] {
-  const addresses: string[] = [];
-  if (bindAddress && bindAddress !== '::' && bindAddress !== '0.0.0.0') {
-    addresses.push(`${bindAddress}:${port}`);
-  }
   const ipv4: string[] = [];
   const ipv6: string[] = [];
+  if (bindAddress && bindAddress !== '::' && bindAddress !== '0.0.0.0') {
+    if (bindAddress.includes(':')) {
+      ipv6.push(`[${bindAddress}]:${port}`);
+    } else {
+      ipv4.push(`${bindAddress}:${port}`);
+    }
+  }
   try {
     const interfaces = os.networkInterfaces();
     for (const entries of Object.values(interfaces)) {
@@ -268,19 +271,12 @@ function formatReachableAddresses(bindAddress: string, port: number): string[] {
       for (const entry of entries) {
         const iface = entry as { family?: string | number; address: string; internal?: boolean } | undefined;
         if (!iface || iface.internal) continue;
-        const f = iface.family;
-        const family =
-          typeof f === 'string'
-            ? f
-            : f === 4
-              ? 'IPv4'
-              : f === 6
-                ? 'IPv6'
-                : '';
+        const family = typeof iface.family === 'string' ? iface.family : iface.family === 4 ? 'IPv4' : iface.family === 6 ? 'IPv6' : '';
         if (family === 'IPv4') {
-          if (iface.address.startsWith('127.')) continue;
-          if (iface.address.startsWith('169.254.')) continue; // APIPA/link-local
-          ipv4.push(`${iface.address}:${port}`);
+          const addr = iface.address;
+          if (addr.startsWith('127.')) continue;
+          if (addr.startsWith('169.254.')) continue; // APIPA/link-local
+          ipv4.push(`${addr}:${port}`);
         } else if (family === 'IPv6') {
           const addr = iface.address.toLowerCase();
           if (addr === '::1' || addr.startsWith('fe80:')) continue; // loopback/link-local
