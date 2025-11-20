@@ -117,6 +117,12 @@ export function resolveApiModel(modelValue: string): ModelName {
   if (normalized in MODEL_CONFIGS) {
     return normalized as ModelName;
   }
+  if (normalized.includes('5.0') || normalized === 'gpt-5-pro' || normalized === 'gpt-5') {
+    return 'gpt-5.0-pro';
+  }
+  if (normalized.includes('5-pro') && !normalized.includes('5.1')) {
+    return 'gpt-5.0-pro';
+  }
   if (normalized.includes('5.1') && normalized.includes('pro')) {
     return 'gpt-5.1-pro';
   }
@@ -141,6 +147,12 @@ export function inferModelFromLabel(modelValue: string): ModelName {
   }
   if (normalized in MODEL_CONFIGS) {
     return normalized as ModelName;
+  }
+  if (normalized.includes('5.0') || normalized.includes('5-pro')) {
+    return 'gpt-5.0-pro';
+  }
+  if (normalized.includes('gpt-5') && normalized.includes('pro') && !normalized.includes('5.1')) {
+    return 'gpt-5.0-pro';
   }
   if (normalized.includes('codex')) {
     return 'gpt-5.1-codex';

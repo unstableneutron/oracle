@@ -261,6 +261,19 @@ function buildModelMatchersLiteral(targetModel: string): { labelTokens: string[]
     testIdTokens.add('gpt5-1');
     testIdTokens.add('gpt51');
   }
+  // Numeric variations (5.0 ↔ 50 ↔ gpt-5-0)
+  if (base.includes('5.0') || base.includes('5-0') || base.includes('50')) {
+    push('5.0', labelTokens);
+    push('gpt-5.0', labelTokens);
+    push('gpt5.0', labelTokens);
+    push('gpt-5-0', labelTokens);
+    push('gpt5-0', labelTokens);
+    push('gpt50', labelTokens);
+    push('chatgpt 5.0', labelTokens);
+    testIdTokens.add('gpt-5-0');
+    testIdTokens.add('gpt5-0');
+    testIdTokens.add('gpt50');
+  }
   // Pro / research variants
   if (base.includes('pro')) {
     push('proresearch', labelTokens);
@@ -270,6 +283,11 @@ function buildModelMatchersLiteral(targetModel: string): { labelTokens: string[]
       testIdTokens.add('gpt-5.1-pro');
       testIdTokens.add('gpt-5-1-pro');
       testIdTokens.add('gpt51pro');
+    }
+    if (base.includes('5.0') || base.includes('5-0') || base.includes('50')) {
+      testIdTokens.add('gpt-5.0-pro');
+      testIdTokens.add('gpt-5-0-pro');
+      testIdTokens.add('gpt50pro');
     }
     testIdTokens.add('pro');
     testIdTokens.add('proresearch');
