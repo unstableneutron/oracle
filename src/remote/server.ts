@@ -181,12 +181,11 @@ export async function createRemoteServer(
   if (!address || typeof address === 'string') {
     throw new Error('Unable to determine server address.');
   }
-  logger(color(chalk.cyanBright.bold, `${eye} Remote Oracle listening at ${address.address}:${address.port}`));
-  logger(color(chalk.yellowBright, `Access token: ${authToken}`));
   const reachable = formatReachableAddresses(address.address, address.port);
-  if (reachable.length > 0) {
-    logger(color(chalk.greenBright, `Reachable at: ${reachable.join(', ')}`));
-  }
+  const primary = reachable[0] ?? `${address.address}:${address.port}`;
+  const extras = reachable.slice(1);
+  logger(color(chalk.cyanBright.bold, `${eye} Remote Oracle listening at ${primary}${extras.length ? ` [${extras.join(', ')}]` : ''}`));
+  logger(color(chalk.yellowBright, `Access token: ${authToken}`));
 
   return {
     port: address.port,
