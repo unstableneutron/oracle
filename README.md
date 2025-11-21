@@ -65,11 +65,6 @@ npx -y @steipete/oracle oracle-mcp
 - Cursor setup (MCP): drop a `.cursor/mcp.json` like below, then pick “oracle” in Cursor’s MCP sources. See https://cursor.com/docs/context/mcp for UI steps.
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en-US/install-mcp?name=oracle&config=eyJjb21tYW5kIjoibnB4IC15IEBzdGVpcGV0ZS9vcmFjbGUgb3JhY2xlLW1jcCJ9)
 
-## Related
-- CodexBar: keep Codex and Claude usage visible from the menu bar. Download at <https://codexbar.app>.
-- Trimmy: clipboard flattener for multi-line shell snippets. Download at <https://trimmy.app>.
-- MCPorter: TypeScript runtime/CLI/codegen for MCP. <https://mcporter.dev>.
-
 ```json
 {
   "oracle": {
