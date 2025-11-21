@@ -9,7 +9,7 @@ Oracle uses the official OpenAI Node.js SDK, which allows it to connect to any A
 
 ## Azure OpenAI
 
-To use Azure OpenAI, you need to configure the client to use the Azure-specific implementation. The easiest way is to set the following environment variables:
+To use Azure OpenAI, point Oracle at your Azure resource and supply the Azure key:
 
 ```bash
 export AZURE_OPENAI_ENDPOINT="https://your-resource-name.openai.azure.com/"
@@ -17,14 +17,18 @@ export AZURE_OPENAI_API_KEY="your-azure-api-key"
 export AZURE_OPENAI_API_VERSION="2024-02-15-preview"
 ```
 
-When `AZURE_OPENAI_ENDPOINT` is detected, Oracle automatically switches to the Azure client.
+Key lookup for GPT-family models when an Azure endpoint is set:
+- First looks for `AZURE_OPENAI_API_KEY`.
+- Falls back to `OPENAI_API_KEY` if the Azure key is missing.
+
+Without an Azure endpoint, Oracle keeps using `OPENAI_API_KEY` as before.
 
 ### CLI Configuration
 
-You can also pass these values via CLI flags (though environment variables are recommended for keys):
+You can also pass the Azure settings via CLI flags (env for the key is still recommended):
 
 ```bash
-oracle --azure-endpoint https://... --azure-deployment my-deployment-name
+oracle --azure-endpoint https://... --azure-deployment my-deployment-name --azure-api-version 2024-02-15-preview
 ```
 
 ## Custom Base URLs (LiteLLM, Localhost)

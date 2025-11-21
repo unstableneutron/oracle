@@ -16,6 +16,11 @@ import { loadUserConfig, type UserConfig } from '../../config.js';
 
 const isTty = (): boolean => Boolean(process.stdout.isTTY && chalk.level > 0);
 const dim = (text: string): string => (isTty() ? kleur.dim(text) : text);
+const disabledChoice = (label: string): SessionChoice & { disabled: true } => ({
+  name: label,
+  value: '__disabled__',
+  disabled: true as const,
+});
 
 const RECENT_WINDOW_HOURS = 24;
 const PAGE_SIZE = 10;
@@ -44,8 +49,7 @@ export async function launchTui({ version }: LaunchTuiOptions): Promise<void> {
   let showingOlder = false;
   for (;;) {
     const { recent, older, olderTotal } = await fetchSessionBuckets();
-    type HeaderChoice = { name: string; value: string; disabled: boolean };
-    const choices: Array<SessionChoice | inquirer.Separator | HeaderChoice> = [];
+    const choices: Array<SessionChoice & { disabled?: boolean }> = [];
 
     const headerLabel = dim(
       `${'Status'.padEnd(STATUS_PAD)} ${'Model'.padEnd(MODEL_PAD)} ${'Mode'.padEnd(MODE_PAD)} ${'Timestamp'.padEnd(
@@ -55,24 +59,24 @@ export async function launchTui({ version }: LaunchTuiOptions): Promise<void> {
 
     // Start with a selectable row so focus never lands on a separator
     choices.push({ name: chalk.bold.green('ask oracle'), value: '__ask__' });
-    choices.push(new inquirer.Separator());
+    choices.push(disabledChoice(''));
 
     if (!showingOlder) {
       if (recent.length > 0) {
-        choices.push(new inquirer.Separator(headerLabel));
+        choices.push(disabledChoice(headerLabel));
         choices.push(...recent.map(toSessionChoice));
       } else if (older.length > 0) {
         // No recent entries; show first page of older.
-        choices.push(new inquirer.Separator(headerLabel));
+        choices.push(disabledChoice(headerLabel));
         choices.push(...older.slice(0, PAGE_SIZE).map(toSessionChoice));
       }
     } else if (older.length > 0) {
-      choices.push(new inquirer.Separator(headerLabel));
+      choices.push(disabledChoice(headerLabel));
       choices.push(...older.map(toSessionChoice));
     }
 
-    choices.push(new inquirer.Separator());
-    choices.push(new inquirer.Separator('Actions'));
+    choices.push(disabledChoice(''));
+    choices.push(disabledChoice('Actions'));
     choices.push({ name: chalk.bold.green('ask oracle'), value: '__ask__' });
 
     if (!showingOlder && olderTotal > 0) {

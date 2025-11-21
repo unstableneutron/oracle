@@ -36,6 +36,13 @@ Oracle reads an optional per-user config from `~/.oracle/config.json`. The file 
     token: "c4e5f9...", // printed by `oracle serve`
   },
 
+  // Azure OpenAI defaults (only used when endpoint is set)
+  azure: {
+    endpoint: "https://your-resource-name.openai.azure.com/",
+    deployment: "gpt-5-1-pro",
+    apiVersion: "2024-02-15-preview"
+  },
+
   heartbeatSeconds: 30,     // default heartbeat interval
   filesReport: false,       // default per-file token report
   background: true,         // default background mode for API runs
@@ -50,6 +57,7 @@ Oracle reads an optional per-user config from `~/.oracle/config.json`. The file 
 CLI flags → `config.json` → environment → built-in defaults.
 
 - `engine`, `model`, `search`, `filesReport`, `heartbeatSeconds`, and `apiBaseUrl` in `config.json` override the auto-detected values unless explicitly set on the CLI.
+- If `azure.endpoint` (or `--azure-endpoint`) is set, Oracle reads `AZURE_OPENAI_API_KEY` first and falls back to `OPENAI_API_KEY` for GPT models.
 - Remote browser defaults follow the same order: `--remote-host/--remote-token` win, then `remote.host` / `remote.token` (or `remoteHost` / `remoteToken`) in the config, then `ORACLE_REMOTE_HOST` / `ORACLE_REMOTE_TOKEN` if still unset.
 - `OPENAI_API_KEY` only influences engine selection when neither the CLI nor `config.json` specify an engine (API when present, otherwise browser).
 - `ORACLE_NOTIFY*` env vars still layer on top of the config’s `notify` block.

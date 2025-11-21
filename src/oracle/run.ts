@@ -73,9 +73,15 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
   const previewMode = resolvePreviewMode(options.previewMode ?? options.preview);
   const isPreview = Boolean(previewMode);
 
+  const isAzureOpenAI = Boolean(options.azure?.endpoint);
+
   const getApiKeyForModel = (model: ModelName): string | undefined => {
     if (model.startsWith('gpt')) {
-      return optionsApiKey ?? process.env.OPENAI_API_KEY;
+      if (optionsApiKey) return optionsApiKey;
+      if (isAzureOpenAI) {
+        return process.env.AZURE_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
+      }
+      return process.env.OPENAI_API_KEY;
     }
     if (model.startsWith('gemini')) {
       return optionsApiKey ?? process.env.GEMINI_API_KEY;
@@ -87,7 +93,9 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
   };
 
   const envVar = options.model.startsWith('gpt')
-    ? 'OPENAI_API_KEY'
+    ? isAzureOpenAI
+      ? 'AZURE_OPENAI_API_KEY (or OPENAI_API_KEY)'
+      : 'OPENAI_API_KEY'
     : options.model.startsWith('gemini')
       ? 'GEMINI_API_KEY'
       : 'ANTHROPIC_API_KEY';

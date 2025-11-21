@@ -1,6 +1,6 @@
 # MCP Smoke Tests (local oracle-mcp)
 
-Use these steps to validate CLI + MCP end-to-end before releasing. The published npm package does **not** ship `oracle-mcp` yet, so always point mcporter at the local build (the `oracle-local` entry in `config/mcporter.json`).
+Use these steps to validate CLI + MCP end-to-end before releasing. The npm package now ships `oracle-mcp`, but the local build remains the fastest path for development (see the `oracle-local` entry in `config/mcporter.json`).
 
 ## Checklist (run all four lanes)
 1) CLI (API engine)
