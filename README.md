@@ -35,11 +35,6 @@ oracle session <id> --render
 oracle
 ```
 
-Other good prompts to copy/paste:
-- Map the async data flow and where we validate inputs.
-- Find flaky tests that hit the network and suggest fixes.
-- Compare API contracts vs UI usage and flag mismatches.
-
 ### Clipboard bundle (semi-manual)
 - Build the markdown bundle, print it, and copy it to your clipboard in one go:
   ```bash
