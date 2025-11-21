@@ -24,9 +24,7 @@ Oracle gives your agents a simple, reliable way to **bundle a prompt plus the ri
 
 If you omit `--engine`, Oracle prefers the API engine when `OPENAI_API_KEY` is present; otherwise it falls back to browser mode. Switch explicitly with `-e, --engine {api|browser}` when you want to override the auto choice. Everything else (prompt assembly, file handling, session logging) stays the same.
 
-Note: Browser engine is considered experimental, requires an OpenAI Pro account and only works on macOS with Chrome.
-Windows/Linux browser support is in progress; until then, use `--engine api` or bundle files and paste manually.
-Your system password is needed to copy cookies. To skip Chrome/Keychain entirely, pass inline cookies via
+Note: Browser engine is considered experimental, requires an OpenAI Pro account, and now works on macOS and Linux (Chrome/Chromium/Edge; snap Chromium is supported). See [docs/linux.md](docs/linux.md) for Linux cookie paths and display tips. Your system password is needed to copy cookies. To skip Chrome/Keychain entirely, pass inline cookies via
 `--browser-inline-cookies <json|base64>` or `--browser-inline-cookies-file <path>` (fallback files at
 `~/.oracle/cookies.json` or `~/.oracle/cookies.base64`). API engine is stable and should be preferred.
 

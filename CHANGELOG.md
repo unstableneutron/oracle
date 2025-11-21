@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## 1.3.1 — Unreleased
 
 ### Added
+- Linux browser support: Chrome/Chromium/Edge runs now work on Linux (including snap-installed Chromium) with cookie sync picking up the snap profile paths. See [docs/linux.md](docs/linux.md) for paths and display guidance.
 - Markdown bundles render better in the CLI and ChatGPT: each attached file now appears as `### File: <path>` followed by a fenced code block (language inferred from the extension, fences auto-lengthen when the file already contains backticks). Works for API bundles, browser bundles (including inline mode), and render/dry-run output; ANSI highlighting still applies on rich TTYs.
 - `--render-plain` flag forces plain markdown output (no ANSI/highlighting) even in a rich TTY; takes precedence when combined with `--render` / `--render-markdown`.
 - `--write-output <path>` saves just the final assistant message to disk (adds `.<model>` per file for multi-model runs), with safe path guards and non-fatal write failures.
@@ -20,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - Duplicate prompt guard remains active: Oracle blocks a second run when the exact prompt is already running (we briefly removed this note during unreleased edits, but the behavior never left production).
 
 ### Changed
+- Browser guardrail that blocked Linux browser runs has been removed; browser mode now proceeds whenever Chrome is available (or `CHROME_PATH` is set).
 - Cookie sync covers Chrome, Chromium, Edge, Brave, and Vivaldi profiles; targets chatgpt.com, chat.openai.com, and atlas.openai.com.
 - Reject prompts shorter than 20 characters with a friendly hint for pro-tier models (`gpt-5.1-pro`) only (prevents accidental costly runs while leaving cheaper models unblocked). Override via ORACLE_MIN_PROMPT_CHARS for automated environments.
 - Browser engine default timeout bumped from 15m (900s) to 20m (1200s) so long GPT-5.x Pro responses don’t get cut off; CLI docs/help text now reflect the new ceiling.
