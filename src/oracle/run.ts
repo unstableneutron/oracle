@@ -33,7 +33,6 @@ import { createDefaultClientFactory } from './client.js';
 import { formatBaseUrlForLog, maskApiKey } from './logging.js';
 import { startHeartbeat } from '../heartbeat.js';
 import { startOscProgress } from './oscProgress.js';
-import { getCliVersion } from '../version.js';
 import { createFsAdapter } from './fsAdapter.js';
 import { resolveGeminiModelId } from './gemini.js';
 import { resolveClaudeModelId } from './claude.js';
@@ -159,7 +158,6 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
   const systemPrompt = options.system?.trim() || DEFAULT_SYSTEM_PROMPT;
   const promptWithFiles = buildPrompt(options.prompt, files, cwd);
   const fileCount = files.length;
-  const cliVersion = getCliVersion();
   const richTty = process.stdout.isTTY && chalk.level > 0;
   const timeoutSeconds =
     options.timeoutSeconds === undefined || options.timeoutSeconds === 'auto'
@@ -185,10 +183,19 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
     storeResponse: useBackground,
   });
   const estimatedInputTokens = estimateRequestTokens(requestBody, modelConfig);
-  const tokenLabel = richTty ? chalk.green(estimatedInputTokens.toLocaleString()) : estimatedInputTokens.toLocaleString();
+  const formatTokenEstimate = (value: number): string => {
+    if (value >= 1000) {
+      const abbreviated = Math.floor(value / 100) / 10; // 4,252 -> 4.2
+      const text = `${abbreviated.toFixed(1).replace(/\\.0$/, '')}k`;
+      return richTty ? chalk.green(text) : text;
+    }
+    const text = value.toLocaleString();
+    return richTty ? chalk.green(text) : text;
+  };
+  const tokenLabel = formatTokenEstimate(estimatedInputTokens);
   const fileLabel = richTty ? chalk.magenta(fileCount.toString()) : fileCount.toString();
   const filesPhrase = fileCount === 0 ? 'no files' : `${fileLabel} files`;
-  const headerLine = `🧿 oracle (${cliVersion}) summons ${headerModelLabel} — ${tokenLabel} tokens, ${filesPhrase}`;
+  const headerLine = `Calling ${headerModelLabel} — ${tokenLabel} tokens, ${filesPhrase}.`;
   const shouldReportFiles =
     (options.filesReport || fileTokenInfo.totalTokens > inputTokenBudget) && fileTokenInfo.stats.length > 0;
   if (!isPreview) {

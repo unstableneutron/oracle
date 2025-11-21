@@ -124,7 +124,7 @@ function startModelExecution({
       queuedAt: new Date().toISOString(),
       startedAt: new Date().toISOString(),
     });
-    perModelLog(`🧿 oracle (${version}) summons ${model}`);
+    perModelLog(`oracle (${version}) summons ${model}`);
     const result = await runOracleImpl(
       { ...perModelOptions, effectiveModelId: model },
       {

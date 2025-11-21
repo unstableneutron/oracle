@@ -122,7 +122,7 @@ export async function performSessionRun({
       });
       for (const result of summary.fulfilled) {
         log('');
-        log(kleur.bold(`[${result.model}] Answer:`));
+        log(kleur.bold(`[${result.model}]`));
         const body = await sessionStore.readModelLog(sessionMeta.id, result.model);
         if (body.length === 0) {
           log(dim('(no output recorded)'));

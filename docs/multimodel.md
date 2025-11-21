@@ -75,7 +75,7 @@ Properties:
     "log": { "path": "models/gpt-5.1-pro.log", "bytes": 18234 }
   }
   ```
-- `models/<name>.log` is the raw stream. We append “header” lines (e.g., `🧿 oracle summons gpt-5.1-pro…`) so replays look identical to the live run. Logs stay on disk indefinitely so we can reattach/watch old sessions without embedding huge strings into JSON.
+- `models/<name>.log` is the raw stream. We append “header” lines (e.g., `oracle summons gpt-5.1-pro…`) so replays look identical to the live run. Logs stay on disk indefinitely so we can reattach/watch old sessions without embedding huge strings into JSON.
 
 Backward compatibility: new CLI loads `models/*.json`. If none exist (old session), it falls back to the legacy `session.json` layout.
 
