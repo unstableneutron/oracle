@@ -148,20 +148,24 @@ export async function performSessionRun({
       const shouldStreamInline = process.stdout.isTTY;
       const shouldRenderMarkdown = shouldStreamInline && runOptions.renderPlain !== true;
       const printedModels = new Set<string>();
+      const answerFallbacks = new Map<string, string>();
 
       const printModelLog = async (model: string) => {
         if (printedModels.has(model)) return;
         printedModels.add(model);
         const body = await sessionStore.readModelLog(sessionMeta.id, model);
         log('');
-        if (body.length === 0) {
+        const fallback = answerFallbacks.get(model);
+        const hasBody = body.length > 0;
+        if (!hasBody && !fallback) {
           log(dim(`${model}: (no output recorded)`));
           return;
         }
         const headingLabel = `[${model}]`;
         const heading = shouldStreamInline ? kleur.bold(headingLabel) : headingLabel;
         log(heading);
-        const printable = shouldRenderMarkdown ? renderMarkdownAnsi(body) : body;
+        const content = hasBody ? body : fallback ?? '';
+        const printable = shouldRenderMarkdown ? renderMarkdownAnsi(content) : content;
         write(printable);
         if (!printable.endsWith('\n')) {
           log('');
@@ -177,6 +181,9 @@ export async function performSessionRun({
           version,
           onModelDone: shouldStreamInline
             ? async (result) => {
+                if (result.answerText) {
+                  answerFallbacks.set(result.model, result.answerText);
+                }
                 await printModelLog(result.model);
               }
             : undefined,
