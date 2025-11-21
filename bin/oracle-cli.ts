@@ -781,7 +781,7 @@ async function runRootCommand(options: CliOptions): Promise<void> {
     warnIfOversizeBundle(estimatedTokens, warnThreshold, console.log);
     if (renderMarkdown) {
       const rendered = await formatRenderedMarkdown(bundle.markdown, { richTty: isTty });
-      console.log(rendered);
+      console.log(rendered.replace(/\n+$/u, ''));
     }
     if (copyMarkdown) {
       const result = await copyToClipboard(bundle.markdown);
