@@ -1,5 +1,5 @@
 import notifier from 'toasted-notifier';
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { formatUSD, formatNumber } from '../oracle/format.js';
 import { MODEL_CONFIGS } from '../oracle/config.js';
 import type { SessionMode, SessionMetadata } from '../sessionStore.js';
@@ -91,6 +91,19 @@ export async function sendSessionNotification(
         } catch (retryError) {
           const reason = describeNotifierError(retryError);
           log(`(notify skipped after retry: ${reason})`);
+          return;
+        }
+      }
+    }
+    if (isMacBadCpuError(error)) {
+      const repaired = await repairMacBadCpu(log);
+      if (repaired) {
+        try {
+          await notifier.notify({ title, message, sound: settings.sound, ...(macAppIconOption()) });
+          return;
+        } catch (retryError) {
+          const reason = describeNotifierError(retryError);
+          log(`(notify skipped after quarantined/notarization fix: ${reason})`);
           return;
         }
       }
@@ -187,6 +200,16 @@ function isMacExecError(error: unknown): boolean {
   );
 }
 
+function isMacBadCpuError(error: unknown): boolean {
+  return Boolean(
+    process.platform === 'darwin' &&
+    error &&
+    typeof error === 'object' &&
+    'errno' in error &&
+    (error as { errno?: number }).errno === -86
+  );
+}
+
 async function repairMacNotifier(log: (message: string) => void): Promise<boolean> {
   const binPath = macNotifierPath();
   if (!binPath) return false;
@@ -266,6 +289,36 @@ function macNativeNotifierPath(): string | null {
     }
   }
   return null;
+}
+
+async function repairMacBadCpu(log: (message: string) => void): Promise<boolean> {
+  const binPath = macNotifierPath();
+  if (!binPath) return false;
+  const appDir = path.dirname(path.dirname(path.dirname(binPath)));
+  try {
+    await runXattrStrip(appDir);
+    await runXattrStrip(binPath);
+    await fs.chmod(binPath, 0o755);
+    return true;
+  } catch (error) {
+    const reason = describeNotifierError(error);
+    log(`(notify quarantine fix failed: ${reason} — try manually: xattr -dr com.apple.quarantine "${appDir}")`);
+    return false;
+  }
+}
+
+async function runXattrStrip(target: string): Promise<void> {
+  if (process.platform !== 'darwin') return;
+  await new Promise<void>((resolve, reject) => {
+    const child = execFile('xattr', ['-dr', 'com.apple.quarantine', target], { stdio: 'ignore' }, (error) => {
+      if (error && (error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+    child.on('error', reject);
+  });
 }
 
 function muteByConfig(env: NodeJS.ProcessEnv, config?: NotifyConfig): boolean {
