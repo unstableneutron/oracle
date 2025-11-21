@@ -61,6 +61,11 @@ export async function performSessionRun({
   notifications,
   browserDeps,
 }: SessionRunParams): Promise<void> {
+  const writeInline = (chunk: string): boolean => {
+    // Keep session logs intact while still echoing inline output to the user.
+    write(chunk);
+    return process.stdout.write(chunk);
+  };
   await sessionStore.updateSession(sessionMeta.id, {
     status: 'running',
     startedAt: new Date().toISOString(),
@@ -193,7 +198,7 @@ export async function performSessionRun({
         log(heading);
         const content = hasBody ? body : fallback ?? '';
         const printable = shouldRenderMarkdown ? renderMarkdownAnsi(content) : content;
-        write(printable);
+        writeInline(printable);
         if (!printable.endsWith('\n')) {
           log('');
         }
