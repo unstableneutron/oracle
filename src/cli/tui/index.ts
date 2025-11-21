@@ -543,9 +543,10 @@ async function askOracleFlow(version: string, userConfig: UserConfig): Promise<v
       logLine(message);
     }
   };
+  // Write streamed chunks to the session log; stdout handling is owned by runOracle.
   const combinedWrite = (chunk: string): boolean => {
     writeChunk(chunk);
-    return process.stdout.write(chunk);
+    return true;
   };
 
   console.log(chalk.bold(`Session ${sessionMeta.id} starting...`));

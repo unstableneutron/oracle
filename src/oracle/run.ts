@@ -54,7 +54,7 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
     cwd = process.cwd(),
     fs: fsModule = createFsAdapter(fs),
     log = console.log,
-    write = (text: string) => process.stdout.write(text),
+    write: sinkWrite = (_text: string) => true,
     now = () => performance.now(),
     clientFactory = createDefaultClientFactory(),
     client,
@@ -370,15 +370,12 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
             ensureAnswerHeader();
             if (!options.silent && typeof event.delta === 'string') {
               // Always keep the log/bookkeeping sink up to date.
-              write(event.delta);
-              // For stdout: stream plainly when --render-plain, otherwise defer to final markdown render.
-              if (writingToStdout) {
-                if (renderPlain) {
-                  stdoutWrite(event.delta);
-                } else {
-                  streamedChunks.push(event.delta);
-                }
-              } else if (!renderPlain) {
+              sinkWrite(event.delta);
+              if (renderPlain) {
+                // Plain mode: stream directly to stdout regardless of write sink.
+                stdoutWrite(event.delta);
+              } else if (isTty) {
+                // Buffer for end-of-stream markdown rendering on TTY.
                 streamedChunks.push(event.delta);
               }
             }
@@ -416,10 +413,9 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
         stdoutWrite('\n');
       }
       log('');
-    } else if (renderPlain && writingToStdout) {
-      // If we streamed plain text to stdout, still end with a newline for cleanliness.
+    } else if (renderPlain) {
+      // Plain streaming already wrote chunks; ensure clean separation.
       stdoutWrite('\n');
-      log('');
     } else {
       log('');
     }

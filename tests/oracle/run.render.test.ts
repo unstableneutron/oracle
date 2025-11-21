@@ -5,16 +5,12 @@ import type { RunOracleOptions, RunOracleDeps, OracleResponse } from '../../src/
 async function loadRunOracleWithTty(isTty: boolean) {
   const originalTty = (process.stdout as { isTTY?: boolean }).isTTY;
   const originalForceColor = process.env.FORCE_COLOR;
-  const originalWrite = process.stdout.write;
-  const stdoutSpy = vi.fn().mockReturnValue(true as unknown as boolean);
   (process.stdout as { isTTY?: boolean }).isTTY = isTty;
   process.env.FORCE_COLOR = '1';
-  (process.stdout as unknown as { write: typeof stdoutSpy }).write = stdoutSpy as unknown as typeof process.stdout.write;
   vi.resetModules();
   const { runOracle } = await import('../../src/oracle/run.js');
   return {
     runOracle,
-    stdoutSpy,
     restore: () => {
       (process.stdout as { isTTY?: boolean }).isTTY = originalTty;
       if (originalForceColor === undefined) {
@@ -22,7 +18,6 @@ async function loadRunOracleWithTty(isTty: boolean) {
       } else {
         process.env.FORCE_COLOR = originalForceColor;
       }
-      (process.stdout as unknown as { write: typeof originalWrite }).write = originalWrite;
     },
   };
 }
@@ -57,8 +52,13 @@ describe('runOracle streaming rendering', () => {
   };
 
   it('renders streamed markdown once in rich TTY by default', async () => {
-    const { runOracle, stdoutSpy, restore } = await loadRunOracleWithTty(true);
+    const { runOracle, restore } = await loadRunOracleWithTty(true);
     const logSink: string[] = [];
+    const stdoutSink: string[] = [];
+    const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(((chunk: string | Uint8Array) => {
+      stdoutSink.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write);
 
     await runOracle(baseOptions, {
       clientFactory: makeStreamingClient('# Title\n- item'),
@@ -69,12 +69,13 @@ describe('runOracle streaming rendering', () => {
       wait: async () => {},
     });
 
-    const rendered = stdoutSpy.mock.calls.map((c) => String(c[0])).join('');
+    const rendered = stdoutSink.join('');
     const combined = rendered + logSink.join('');
     expect(combined).toContain('# Title');
     if (rendered.length > 0) {
       expect(rendered).toContain('\u001b['); // ANSI present when we render to TTY
     }
+    stdoutSpy.mockRestore();
     restore();
   });
 
