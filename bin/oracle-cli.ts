@@ -491,6 +491,7 @@ function buildRunOptions(options: ResolvedCliOptions, overrides: Partial<RunOrac
     browserInlineFiles: overrides.browserInlineFiles ?? options.browserInlineFiles ?? false,
     browserBundleFiles: overrides.browserBundleFiles ?? options.browserBundleFiles ?? false,
     background: overrides.background ?? undefined,
+    renderPlain: overrides.renderPlain ?? options.renderPlain ?? false,
   };
 }
 
@@ -538,6 +539,7 @@ function buildRunOptionsFromMetadata(metadata: SessionMetadata): RunOracleOption
     browserInlineFiles: stored.browserInlineFiles,
     browserBundleFiles: stored.browserBundleFiles,
     background: stored.background,
+    renderPlain: stored.renderPlain,
   };
 }
 

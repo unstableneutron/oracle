@@ -122,6 +122,8 @@ export interface RunOracleOptions {
   background?: boolean;
   /** Number of seconds to wait before timing out, or 'auto' to use model defaults. */
   timeoutSeconds?: number | 'auto';
+  /** Render plain text instead of ANSI-rendered markdown when printing answers to a rich TTY. */
+  renderPlain?: boolean;
 }
 
 export interface UsageSummary {

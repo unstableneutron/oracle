@@ -80,6 +80,7 @@ export interface StoredRunOptions {
   baseUrl?: string;
   azure?: AzureOptions;
   effectiveModelId?: string;
+   renderPlain?: boolean;
 }
 
 export interface SessionMetadata {

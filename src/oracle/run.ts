@@ -36,6 +36,7 @@ import { startOscProgress } from './oscProgress.js';
 import { createFsAdapter } from './fsAdapter.js';
 import { resolveGeminiModelId } from './gemini.js';
 import { resolveClaudeModelId } from './claude.js';
+import { renderMarkdownAnsi } from '../cli/markdownRenderer.js';
 
 const isTty = process.stdout.isTTY && chalk.level > 0;
 const dim = (text: string): string => (isTty ? kleur.dim(text) : text);
@@ -159,6 +160,7 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
   const promptWithFiles = buildPrompt(options.prompt, files, cwd);
   const fileCount = files.length;
   const richTty = process.stdout.isTTY && chalk.level > 0;
+  const renderPlain = Boolean(options.renderPlain);
   const timeoutSeconds =
     options.timeoutSeconds === undefined || options.timeoutSeconds === 'auto'
       ? isLongRunningModel
@@ -426,7 +428,12 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
       write('\n');
     } else {
       ensureAnswerHeader();
-      log(answerText || chalk.dim('(no text output)'));
+      const printable = answerText
+        ? renderPlain || !richTty
+          ? answerText
+          : renderMarkdownAnsi(answerText)
+        : chalk.dim('(no text output)');
+      log(printable);
       log('');
     }
   }
@@ -456,6 +463,17 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
     .join('/');
   const tokensLabel = options.verbose ? 'tokens (input/output/reasoning/total)' : 'tok(i/o/r/t)';
   statsParts.push(`${tokensLabel}=${tokensDisplay}`);
+  if (options.verbose) {
+    const actualInput = usage.input_tokens;
+    if (actualInput !== undefined) {
+      const delta = actualInput - estimatedInputTokens;
+      const deltaText =
+        delta === 0 ? '' : delta > 0 ? ` (+${delta.toLocaleString()})` : ` (${delta.toLocaleString()})`;
+      statsParts.push(
+        `est→actual=${estimatedInputTokens.toLocaleString()}→${actualInput.toLocaleString()}${deltaText}`,
+      );
+    }
+  }
   if (!searchEnabled) {
     statsParts.push('search=off');
   }
