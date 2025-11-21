@@ -113,6 +113,12 @@ const TAGLINES = [
   'Halloween special: no spooky stack traces, just dead bugs.',
   'Independence Day: fireworks outside, stable builds inside.',
   'Christmas run: stockings filled, prod quiet.',
+  'Nowruz reset: sweep caches, welcome clean deploys.',
+  'Hanukkah lights, zero prod fires.',
+  'Ramadan focus: fast from scope creep, feast on clarity.',
+  'Pride Month: rainbow flags, zero red builds.',
+  'Thanksgiving: grateful for green builds, no turkey outages.',
+  'Solstice deploy: longest day, shortest incident list.',
 ];
 
 export interface TaglineOptions {
