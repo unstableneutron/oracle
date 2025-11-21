@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "pnpm run typecheck && biome lint .",
     "test": "vitest run",
-    "test:browser": "pnpm run build && node dist/bin/oracle-cli.js --engine browser --prompt \"browser preview smoke\" --preview",
+    "test:browser": "pnpm run build && ./scripts/browser-smoke.sh",
     "test:live": "ORACLE_LIVE_TEST=1 vitest run tests/live --exclude tests/live/openai-live.test.ts",
     "test:pro": "ORACLE_LIVE_TEST=1 vitest run tests/live/openai-live.test.ts",
     "test:coverage": "vitest run --coverage",
