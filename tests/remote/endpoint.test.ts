@@ -31,6 +31,23 @@ describe("parseRemoteEndpoint", () => {
     expect(() => parseRemoteEndpoint("not-a-host")).toThrow(/host:port/i);
   });
 
+  it("accepts bare bracketed IPv6 host", () => {
+    const endpoint = parseRemoteEndpoint("[::1]:9473");
+    expect(endpoint).toEqual({
+      transport: "http",
+      original: "[::1]:9473",
+      isUrlInput: false,
+      hostname: "::1",
+      port: 9473,
+      basePath: "",
+    });
+  });
+
+  it("rejects bare bracketed non-IPv6 hosts", () => {
+    expect(() => parseRemoteEndpoint("[]:9473")).toThrow(/IPv6/i);
+    expect(() => parseRemoteEndpoint("[localhost]:9473")).toThrow(/IPv6/i);
+  });
+
   it("rejects malformed bare port segments", () => {
     expect(() => parseRemoteEndpoint("127.0.0.1:9473abc")).toThrow(
       /Expected --remote-host to be host:port when no scheme is used/i,
