@@ -81,6 +81,8 @@ function parseBareEndpoint(raw: string): RemoteEndpoint {
     );
   }
 
+  validateBarePortSegment(raw);
+
   try {
     const { hostname, port } = parseHostPort(raw);
     return {
@@ -105,6 +107,19 @@ function parseBareEndpoint(raw: string): RemoteEndpoint {
       throw new Error(`Expected --remote-host to contain a valid host. ${REMOTE_HOST_HELP}`);
     }
     throw new Error(`${message} ${REMOTE_HOST_HELP}`);
+  }
+}
+
+function validateBarePortSegment(raw: string): void {
+  const lastColon = raw.lastIndexOf(":");
+  if (lastColon < 0) {
+    return;
+  }
+  const portSegment = raw.slice(lastColon + 1);
+  if (!/^\d+$/.test(portSegment)) {
+    throw new Error(
+      `Expected --remote-host to be host:port when no scheme is used (no-scheme input defaults to HTTP). ${REMOTE_HOST_HELP}`,
+    );
   }
 }
 
