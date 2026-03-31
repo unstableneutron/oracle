@@ -51,10 +51,15 @@ export async function runBridgeDoctor(_options: BridgeDoctorCliOptions): Promise
       ),
     );
 
-    const endpoint = parseRemoteEndpoint(resolvedRemote.host);
+    let endpoint: Awaited<ReturnType<typeof parseRemoteEndpoint>> | null = null;
+    try {
+      endpoint = parseRemoteEndpoint(resolvedRemote.host);
+    } catch (error) {
+      fail.push(error instanceof Error ? error.message : `Invalid --remote-host: ${String(error)}`);
+    }
 
     let tcp: { ok: boolean; error?: string } | null = null;
-    if (!endpoint.isUrlInput) {
+    if (endpoint && !endpoint.isUrlInput) {
       tcp = await checkTcpConnection(resolvedRemote.host, 2000);
       if (tcp.ok) {
         lines.push(chalk.dim(`TCP connect: ${chalk.green("ok")}`));
@@ -70,7 +75,7 @@ export async function runBridgeDoctor(_options: BridgeDoctorCliOptions): Promise
       fail.push(
         "Remote token is missing. Run `oracle bridge client --connect <...> --write-config` or set ORACLE_REMOTE_TOKEN.",
       );
-    } else if (endpoint.isUrlInput || tcp?.ok) {
+    } else if (endpoint && (endpoint.isUrlInput || tcp?.ok)) {
       const health = await checkRemoteHealth({
         host: resolvedRemote.host,
         token: resolvedRemote.token,
