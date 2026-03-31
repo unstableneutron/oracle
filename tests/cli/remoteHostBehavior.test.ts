@@ -55,7 +55,7 @@ async function createRunsServer(pathPrefix = ""): Promise<RunServer> {
 
     if (
       request.method === "POST" &&
-      (normalized === `${prefix}/runs` || normalized.endsWith("/runs"))
+      normalized === `${prefix}/runs`
     ) {
       response.writeHead(200, { "Content-Type": "application/x-ndjson" });
       const event = {
@@ -76,7 +76,7 @@ async function createRunsServer(pathPrefix = ""): Promise<RunServer> {
       return;
     }
 
-    if (request.method === "GET" && normalized.endsWith("/health")) {
+    if (request.method === "GET" && normalized === `${prefix}/health`) {
       response.writeHead(200, { "Content-Type": "text/plain" });
       response.end("ok\n");
       return;
@@ -186,7 +186,11 @@ describe("remote-host behavior", () => {
       expect(result.output).toContain(`Remote browser host detected: ${remoteServer.path}`);
       expect(result.output).toMatch(/Remote browser runs require --wait; ignoring --no-wait\./);
     } finally {
-      process.env.ORACLE_HOME_DIR = previousHome;
+      if (previousHome === undefined) {
+        delete process.env.ORACLE_HOME_DIR;
+      } else {
+        process.env.ORACLE_HOME_DIR = previousHome;
+      }
       await remoteServer.close();
       await rm(oracleHome, { recursive: true, force: true });
     }
