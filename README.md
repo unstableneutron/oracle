@@ -277,6 +277,9 @@ oracle --engine browser --remote-host https://serve.example.com/oracle --remote-
 oracle --engine browser --browser-inline-cookies-file ~/.oracle/cookies.json -p "Run the UI smoke" --file "src/**/*.ts"
 ```
 
+If you place `oracle serve` behind a reverse proxy, ensure `/runs` is not buffered by the proxy (it carries streamed output).
+For path-based prefixes, rewrite paths so `health` and `runs` route to upstream `/health` and `/runs`.
+
 Session management
 
 ```bash
