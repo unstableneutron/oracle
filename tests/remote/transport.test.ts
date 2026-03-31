@@ -229,12 +229,27 @@ describe("remote transport", () => {
     await server.close();
   });
 
-  test("does not mark URL remote hosts as TCP-connected", async () => {
-    const { checkTcpConnection } = await import("../../src/remote/health.js");
-    const result = await checkTcpConnection("http://127.0.0.1:9473");
+  test("probes URL remote hosts for TCP connectivity", async () => {
+    const records: RequestRecord[] = [];
+    const server = await createCaptureServer("http", (req, res) => {
+      records.push({
+        method: req.method ?? "",
+        path: req.url ?? "",
+        headers: { ...req.headers },
+      });
 
-    expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/URL-style remote hosts are not supported/i);
+      res.writeHead(404);
+      res.end();
+    });
+
+    const { checkTcpConnection } = await import("../../src/remote/health.js");
+    const result = await checkTcpConnection(`http://127.0.0.1:${server.port}/oracle`);
+
+    expect(result.ok).toBe(true);
+    expect(result.error).toBeUndefined();
+
+    await server.close();
+    expect(records).toHaveLength(0);
   });
 
   test("probes root /health for explicit http URLs", async () => {

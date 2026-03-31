@@ -16,15 +16,9 @@ export async function checkTcpConnection(
   timeoutMs = 2000,
 ): Promise<{ ok: boolean; error?: string }> {
   const endpoint = parseRemoteEndpoint(host);
-  if (endpoint.isUrlInput) {
-    return {
-      ok: false,
-      error: "TCP checks for URL-style remote hosts are not supported in checkTcpConnection",
-    };
-  }
-  const { port } = endpoint;
+  const { port, hostname } = endpoint;
   return await new Promise((resolve) => {
-    const socket = net.createConnection({ host: endpoint.hostname, port });
+    const socket = net.createConnection({ host: hostname, port });
     const onError = (err: Error) => {
       cleanup();
       resolve({ ok: false, error: err.message });
