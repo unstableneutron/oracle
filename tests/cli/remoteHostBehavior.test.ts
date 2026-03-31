@@ -6,6 +6,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 import { sessionStore } from "../../src/sessionStore.js";
+import { setOracleHomeDirOverrideForTest } from "../../src/oracleHome.js";
 
 const execFileAsync = promisify(execFile);
 const CLI_ENTRY = path.join(process.cwd(), "bin", "oracle-cli.ts");
@@ -155,8 +156,7 @@ describe("remote-host behavior", () => {
 
   it("supports restart --no-wait with URL-valued --remote-host and a browser session fixture", async () => {
     const oracleHome = await mkdtemp(path.join(os.tmpdir(), "oracle-remotehost-restart-"));
-    const previousHome = process.env.ORACLE_HOME_DIR;
-    process.env.ORACLE_HOME_DIR = oracleHome;
+    setOracleHomeDirOverrideForTest(oracleHome);
     const remoteServer = await createRunsServer("/bridge");
 
     try {
@@ -186,11 +186,7 @@ describe("remote-host behavior", () => {
       expect(result.output).toContain(`Remote browser host detected: ${remoteServer.path}`);
       expect(result.output).toMatch(/Remote browser runs require --wait; ignoring --no-wait\./);
     } finally {
-      if (previousHome === undefined) {
-        delete process.env.ORACLE_HOME_DIR;
-      } else {
-        process.env.ORACLE_HOME_DIR = previousHome;
-      }
+      setOracleHomeDirOverrideForTest(null);
       await remoteServer.close();
       await rm(oracleHome, { recursive: true, force: true });
     }
