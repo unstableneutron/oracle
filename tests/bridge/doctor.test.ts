@@ -43,6 +43,33 @@ describe("oracle bridge doctor", () => {
     vi.restoreAllMocks();
   });
 
+  it("reports malformed remote host URL as problem and skips checks", async () => {
+    const healthMock = vi.mocked(remoteHealth.checkRemoteHealth);
+    const tcpMock = vi.mocked(remoteHealth.checkTcpConnection);
+    vi.mocked(healthMock).mockReset();
+    vi.mocked(tcpMock).mockReset();
+
+    await fs.writeFile(
+      path.join(tempDir, "config.json"),
+      JSON.stringify({ browser: { remoteHost: "https://bad host", remoteToken: "secret" } }, null, 2),
+      "utf8",
+    );
+
+    const logs: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((msg) => logs.push(String(msg)));
+
+    await runBridgeDoctor({ verbose: false });
+
+    const output = stripAnsi(logs.join("\n"));
+    expect(output).toMatch(/Problems:/i);
+    expect(output).toMatch(/Invalid --remote-host URL:/i);
+    expect(output).not.toContain("TCP connect:");
+    expect(output).not.toContain("Auth (/health):");
+    expect(healthMock).not.toHaveBeenCalled();
+    expect(tcpMock).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(1);
+  });
+
   it("reports healthy remote configuration", async () => {
     await fs.writeFile(
       path.join(tempDir, "config.json"),
