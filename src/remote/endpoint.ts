@@ -156,8 +156,6 @@ export function joinRemotePath(
 
 function normalizeBasePath(pathname: string): string {
   const trimmed = pathname.trim();
-  if (!trimmed || trimmed === "/") {
-    return "";
-  }
-  return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
+  const withoutTrailingSlashes = trimmed.replace(/\/+$/, "");
+  return withoutTrailingSlashes;
 }
