@@ -14,6 +14,18 @@ describe("parseRemoteEndpoint", () => {
     });
   });
 
+  it("accepts legacy bare host:port values with leading-zero ports", () => {
+    const endpoint = parseRemoteEndpoint("127.0.0.1:09473");
+    expect(endpoint).toEqual({
+      transport: "http",
+      original: "127.0.0.1:09473",
+      isUrlInput: false,
+      hostname: "127.0.0.1",
+      port: 9473,
+      basePath: "",
+    });
+  });
+
   it("requires bare host:port", () => {
     expect(() => parseRemoteEndpoint("127.0.0.1")).toThrow(/host:port/i);
     expect(() => parseRemoteEndpoint("not-a-host")).toThrow(/host:port/i);
@@ -61,7 +73,7 @@ describe("parseRemoteEndpoint", () => {
     expect(() => parseRemoteEndpoint(""))
       .toThrow(/Expected --remote-host/i);
     expect(() => parseRemoteEndpoint("http://")).toThrow(/Invalid --remote-host/i);
-    expect(() => parseRemoteEndpoint("not::valid")).toThrow(/IPv6 in brackets|Expected --remote-host/i);
+    expect(() => parseRemoteEndpoint("not::valid")).toThrow(/IPv6 in brackets|IPv6 addresses in brackets|Expected --remote-host/i);
     expect(() => parseRemoteEndpoint("host:99999")).toThrow(/between 1 and 65535/i);
   });
 
