@@ -66,6 +66,45 @@ describe("summarizeModelRunsForConsult", () => {
     });
   });
 
+  test("omits remote execution metadata while preserving browser settings", () => {
+    const config = buildConsultBrowserConfig({
+      userConfig: {
+        browser: {
+          chatgptUrl: "https://chatgpt.com/plus",
+          debugPort: 9333,
+          keepBrowser: true,
+          manualLogin: true,
+          thinkingTime: "extended",
+          remoteHost: "https://remote-oracle.invalid",
+          remoteToken: "super-secret",
+          remoteViaSshReverseTunnel: {
+            ssh: "ssh -N -L 9222:127.0.0.1:9222 example",
+            remotePort: 9222,
+            localPort: 9333,
+            identity: "~/.ssh/id_ed25519",
+          },
+        },
+      },
+      env: {},
+      runModel: "gpt-5.1",
+      inputModel: "gpt-5.1",
+    });
+
+    expect(config).toMatchObject({
+      chatgptUrl: "https://chatgpt.com/plus",
+      url: "https://chatgpt.com/plus",
+      debugPort: 9333,
+      keepBrowser: true,
+      manualLogin: true,
+      thinkingTime: "extended",
+      desiredModel: "GPT-5.2",
+      cookieSync: false,
+    });
+    expect(config).not.toHaveProperty("remoteHost");
+    expect(config).not.toHaveProperty("remoteToken");
+    expect(config).not.toHaveProperty("remoteViaSshReverseTunnel");
+  });
+
   test("lets explicit consult inputs override config defaults", () => {
     const config = buildConsultBrowserConfig({
       userConfig: {
