@@ -1,36 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { joinRemoteEndpointPath, parseRemoteEndpoint } from "../../src/remote/endpoint.js";
+import { joinRemotePath, parseRemoteEndpoint } from "../../src/remote/endpoint.js";
 
 describe("parseRemoteEndpoint", () => {
   it("parses bare host:port as HTTP", () => {
     const endpoint = parseRemoteEndpoint("127.0.0.1:9473");
     expect(endpoint).toEqual({
-      scheme: "http",
+      transport: "http",
+      original: "127.0.0.1:9473",
+      isUrlInput: false,
       hostname: "127.0.0.1",
       port: 9473,
       basePath: "",
     });
   });
 
-  it("defaults omitted port to 80 for bare host", () => {
-    const endpoint = parseRemoteEndpoint("127.0.0.1");
-    expect(endpoint.port).toBe(80);
-    expect(endpoint.scheme).toBe("http");
+  it("requires bare host:port", () => {
+    expect(() => parseRemoteEndpoint("127.0.0.1")).toThrow(/host:port/i);
+    expect(() => parseRemoteEndpoint("not-a-host")).toThrow(/host:port/i);
   });
 
   it("accepts http and https URLs", () => {
     const http = parseRemoteEndpoint("http://localhost:9473/oracle/");
-    expect(http.scheme).toBe("http");
+    expect(http.transport).toBe("http");
     expect(http.port).toBe(9473);
     expect(http.basePath).toBe("/oracle");
+    expect(http.original).toBe("http://localhost:9473/oracle/");
+    expect(http.isUrlInput).toBe(true);
 
     const https = parseRemoteEndpoint("https://example.com:9443/oracle");
-    expect(https.scheme).toBe("https");
+    expect(https.transport).toBe("https");
     expect(https.port).toBe(9443);
     expect(https.basePath).toBe("/oracle");
+    expect(https.isUrlInput).toBe(true);
   });
 
-  it("defaults ports to 80/443 when URL port is omitted", () => {
+  it("defaults URL ports to 80/443 when URL port is omitted", () => {
     const http = parseRemoteEndpoint("http://example.com");
     const https = parseRemoteEndpoint("https://example.com");
 
@@ -76,19 +80,19 @@ describe("parseRemoteEndpoint", () => {
     );
   });
 
-  it("mentions actionable accepted forms and defaults in error messages", () => {
+  it("mentions actionable accepted forms and no-scheme defaults guidance in errors", () => {
     expect(() => parseRemoteEndpoint("ws://example.com:80")).toThrow(
       /Accepted forms for --remote-host/i,
     );
-    expect(() => parseRemoteEndpoint("")).toThrow(/No-scheme input defaults to HTTP/i);
+    expect(() => parseRemoteEndpoint("127.0.0.1")).toThrow(/No-scheme input defaults to HTTP/i);
   });
 });
 
-describe("joinRemoteEndpointPath", () => {
+describe("joinRemotePath", () => {
   it("builds endpoint paths from basePath", () => {
-    expect(joinRemoteEndpointPath("", "/health")).toBe("/health");
-    expect(joinRemoteEndpointPath("/oracle", "/health")).toBe("/oracle/health");
-    expect(joinRemoteEndpointPath("/oracle/", "/runs")).toBe("/oracle/runs");
-    expect(joinRemoteEndpointPath("/", "/runs")).toBe("/runs");
+    expect(joinRemotePath(parseRemoteEndpoint("127.0.0.1:9473"), "/health")).toBe("/health");
+    expect(joinRemotePath(parseRemoteEndpoint("http://example.com/oracle"), "/health")).toBe("/oracle/health");
+    expect(joinRemotePath(parseRemoteEndpoint("http://example.com/oracle/"), "/runs")).toBe("/oracle/runs");
+    expect(joinRemotePath(parseRemoteEndpoint("https://example.com/"), "/runs")).toBe("/runs");
   });
 });

@@ -1,9 +1,11 @@
 const REMOTE_HOST_HELP =
-  "Accepted forms for --remote-host are: host[:port] (defaults to HTTP), http://host[:port][/base-path], or https://host[:port][/base-path]. " +
-  "No-scheme input defaults to HTTP (and defaults to port 80 when port is omitted).";
+  "Accepted forms for --remote-host are: host:port (defaults to HTTP), http://host[:port][/base-path], or https://host[:port][/base-path]. " +
+  "When using URL inputs without an explicit port, defaults are 80/443 for http/https.";
 
 export interface RemoteEndpoint {
-  scheme: "http" | "https";
+  transport: "http" | "https";
+  original: string;
+  isUrlInput: boolean;
   hostname: string;
   port: number;
   basePath: string;
@@ -51,11 +53,13 @@ function parseEndpointUrl(raw: string): RemoteEndpoint {
     throw new Error(`Expected --remote-host to contain a valid host. ${REMOTE_HOST_HELP}`);
   }
 
-  const scheme = url.protocol.slice(0, -1) as RemoteEndpoint["scheme"];
-  const port = parsePort(url.port, scheme === "http" ? 80 : 443);
+  const transport = url.protocol.slice(0, -1) as RemoteEndpoint["transport"];
+  const port = parsePort(url.port, transport === "http" ? 80 : 443);
 
   return {
-    scheme,
+    transport,
+    original: raw,
+    isUrlInput: true,
     hostname,
     port,
     basePath: normalizeBasePath(url.pathname),
@@ -71,36 +75,33 @@ function parseBareEndpoint(raw: string): RemoteEndpoint {
   }
   if (raw.includes("/")) {
     throw new Error(
-      `Expected --remote-host to be host[:port] when no scheme is used. ${REMOTE_HOST_HELP}`,
+      `Expected --remote-host to be host:port when no scheme is used (no-scheme input defaults to HTTP). ${REMOTE_HOST_HELP}`,
     );
   }
 
-  if (raw.startsWith("[") && raw.endsWith("]")) {
-    throw new Error(`Expected --remote-host to be host:port when using bracketed IPv6 without a port. ${REMOTE_HOST_HELP}`);
-  }
-
-  const bracketMatch = raw.match(/^\[(.+)](?::(\d+))?$/);
+  const bracketMatch = raw.match(/^\[(.+)]:(\d+)$/);
   if (bracketMatch) {
     const hostname = bracketMatch[1]?.trim();
     if (!hostname) {
       throw new Error(`Expected --remote-host to contain a valid host. ${REMOTE_HOST_HELP}`);
     }
     return {
-      scheme: "http",
+      transport: "http",
+      original: raw,
+      isUrlInput: false,
       hostname,
-      port: parsePort(bracketMatch[2], 80),
+      port: parsePort(bracketMatch[2], undefined),
       basePath: "",
     };
   }
 
+  if (raw.startsWith("[") && raw.endsWith("]")) {
+    throw new Error(`Expected --remote-host to be host:port when no scheme is used (no-scheme input defaults to HTTP). ${REMOTE_HOST_HELP}`);
+  }
+
   const lastColon = raw.lastIndexOf(":");
   if (lastColon === -1) {
-    return {
-      scheme: "http",
-      hostname: raw,
-      port: 80,
-      basePath: "",
-    };
+    throw new Error(`Expected --remote-host to be host:port when no scheme is used (no-scheme input defaults to HTTP). ${REMOTE_HOST_HELP}`);
   }
 
   const hostname = raw.slice(0, lastColon).trim();
@@ -109,6 +110,9 @@ function parseBareEndpoint(raw: string): RemoteEndpoint {
   if (!hostname) {
     throw new Error(`Expected --remote-host to contain a valid host. ${REMOTE_HOST_HELP}`);
   }
+  if (!portText) {
+    throw new Error(`Expected --remote-host to be host:port when no scheme is used (no-scheme input defaults to HTTP). ${REMOTE_HOST_HELP}`);
+  }
   if (hostname.includes(":")) {
     throw new Error(
       `Expected --remote-host host to be IPv6 in brackets, for example [2001:db8::1]:9473. ${REMOTE_HOST_HELP}`,
@@ -116,16 +120,21 @@ function parseBareEndpoint(raw: string): RemoteEndpoint {
   }
 
   return {
-    scheme: "http",
+    transport: "http",
+    original: raw,
+    isUrlInput: false,
     hostname,
-    port: parsePort(portText, 80),
+    port: parsePort(portText, undefined),
     basePath: "",
   };
 }
 
-function parsePort(raw: string, defaultPort: number): number {
+function parsePort(raw: string, defaultPort?: number): number {
   if (!raw) {
-    return defaultPort;
+    if (typeof defaultPort === "number") {
+      return defaultPort;
+    }
+    throw new Error(`Expected --remote-host to be host:port and the port must be 1-65535. ${REMOTE_HOST_HELP}`);
   }
   if (!/^(?:0|[1-9]\d{0,4})$/.test(raw)) {
     throw new Error(`Expected --remote-host to be host:port and the port must be 1-65535. ${REMOTE_HOST_HELP}`);
@@ -137,12 +146,12 @@ function parsePort(raw: string, defaultPort: number): number {
   return port;
 }
 
-export function joinRemoteEndpointPath(
-  basePath: string,
-  endpoint: "/health" | "/runs",
+export function joinRemotePath(
+  endpoint: RemoteEndpoint,
+  suffix: "/health" | "/runs",
 ): string {
-  const normalizedBasePath = normalizeBasePath(basePath);
-  return normalizedBasePath.length ? `${normalizedBasePath}${endpoint}` : endpoint;
+  const normalizedBasePath = normalizeBasePath(endpoint.basePath);
+  return normalizedBasePath.length ? `${normalizedBasePath}${suffix}` : suffix;
 }
 
 function normalizeBasePath(pathname: string): string {
