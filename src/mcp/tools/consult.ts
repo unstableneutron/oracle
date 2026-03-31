@@ -244,7 +244,11 @@ export function buildConsultBrowserConfig({
   browserArchive?: "auto" | "always" | "never";
   browserKeepBrowser?: boolean;
 }): BrowserSessionConfig {
-  const configuredBrowser = userConfig.browser ?? {};
+  const configuredBrowser = { ...(userConfig.browser ?? {}) };
+  delete configuredBrowser.remoteHost;
+  delete configuredBrowser.remoteToken;
+  delete configuredBrowser.remoteViaSshReverseTunnel;
+
   const envProfileDir = (env.ORACLE_BROWSER_PROFILE_DIR ?? "").trim();
   const hasProfileDir = envProfileDir.length > 0;
   const preferredLabel = (browserModelLabel ?? inputModel)?.trim();
