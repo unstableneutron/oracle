@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { mapConsultToRunOptions } from "../../src/mcp/utils.js";
+import { ensureBrowserAvailable, mapConsultToRunOptions } from "../../src/mcp/utils.js";
 
 describe("mapConsultToRunOptions", () => {
   test("passes multi-model selections through to run options", () => {
@@ -34,5 +34,11 @@ describe("mapConsultToRunOptions", () => {
       "challenge previous answer",
       "final concise decision",
     ]);
+  });
+});
+
+describe("ensureBrowserAvailable", () => {
+  test("accepts URL remoteHost as remote execution config", () => {
+    expect(ensureBrowserAvailable("browser", { remoteHost: "https://oracle.thinh.dev" })).toBeNull();
   });
 });

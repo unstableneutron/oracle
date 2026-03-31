@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { setOracleHomeDirOverrideForTest } from "../../src/oracleHome.js";
+import * as remoteHealth from "../../src/remote/health.js";
 
 // biome-ignore lint/complexity/useRegexLiterals: constructor form avoids control-char lint noise.
 const ansiRegex = new RegExp("\\x1B\\[[0-9;]*m", "g");
@@ -77,5 +78,41 @@ describe("oracle bridge doctor", () => {
     expect(output).toMatch(/remoteToken:\s+missing/i);
     expect(output).toMatch(/Problems:/i);
     expect(process.exitCode).toBe(1);
+  });
+
+  it("skips raw TCP checks for URL remote hosts while still checking /health", async () => {
+    const healthMock = vi.mocked(remoteHealth.checkRemoteHealth);
+    const tcpMock = vi.mocked(remoteHealth.checkTcpConnection);
+    vi.mocked(healthMock).mockReset();
+    vi.mocked(tcpMock).mockReset();
+    vi.mocked(healthMock).mockResolvedValue({ ok: true, version: "test", uptimeSeconds: 1 });
+
+    await fs.writeFile(
+      path.join(tempDir, "config.json"),
+      JSON.stringify(
+        { browser: { remoteHost: "https://oracle.thinh.dev", remoteToken: "secret" } },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const logs: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((msg) => logs.push(String(msg)));
+
+    await runBridgeDoctor({ verbose: false });
+
+    const output = stripAnsi(logs.join("\n"));
+    expect(output).toMatch(/Remote service:\s+configured/i);
+    expect(output).toMatch(/remoteToken:\s+set/i);
+    expect(output).not.toContain("TCP connect:");
+    expect(output).toContain("Auth (/health):");
+    expect(healthMock).toHaveBeenCalledWith({
+      host: "https://oracle.thinh.dev",
+      token: "secret",
+      timeoutMs: 5000,
+    });
+    expect(tcpMock).not.toHaveBeenCalled();
+    expect(process.exitCode ?? 0).toBe(0);
   });
 });

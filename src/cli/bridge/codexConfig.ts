@@ -49,6 +49,7 @@ export function formatCodexMcpSnippet({
     'command = "oracle-mcp"',
     "args = []",
     `env = { ORACLE_ENGINE = "browser", ORACLE_REMOTE_HOST = "${escapeTomlString(hostValue)}", ORACLE_REMOTE_TOKEN = "${escapeTomlString(tokenValue)}" }`,
+    "# ORACLE_REMOTE_HOST accepts host:port or http(s)://host[:port][/base-path]",
     "",
     "# If you prefer npx:",
     "# [mcp.servers.oracle]",

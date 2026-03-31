@@ -372,6 +372,29 @@ export function formatConsultDryRunResolved(details: ConsultDryRunResolved): str
   return lines;
 }
 
+export function getConsultRemoteExecution({
+  resolvedEngine,
+  remoteHost,
+  remoteToken,
+}: {
+  resolvedEngine: "api" | "browser";
+  remoteHost?: string | null;
+  remoteToken?: string;
+}): { useRemoteExecutor: boolean; missingTokenError?: string } {
+  if (resolvedEngine !== "browser" || !remoteHost) {
+    return { useRemoteExecutor: false };
+  }
+
+  if (!remoteToken) {
+    return {
+      useRemoteExecutor: false,
+      missingTokenError: `Remote host configured (${remoteHost}) but remote token is missing. Run \`oracle bridge client --connect <...>\` or set ORACLE_REMOTE_TOKEN.`,
+    };
+  }
+
+  return { useRemoteExecutor: true };
+}
+
 export function registerConsultTool(server: McpServer): void {
   server.registerTool(
     "consult",
@@ -439,6 +462,7 @@ export function registerConsultTool(server: McpServer): void {
           .catch(() => {});
 
       const resolvedRemote = resolveRemoteServiceConfig({ userConfig, env: process.env });
+      const remoteHost = resolvedRemote.host;
 
       let browserConfig: BrowserSessionConfig | undefined;
       if (resolvedEngine === "browser") {
@@ -491,7 +515,7 @@ export function registerConsultTool(server: McpServer): void {
       }
 
       const browserGuard = ensureBrowserAvailable(resolvedEngine, {
-        remoteHost: resolvedRemote.host,
+        remoteHost,
       });
       if (resolvedEngine === "browser" && browserGuard) {
         return {
@@ -501,18 +525,21 @@ export function registerConsultTool(server: McpServer): void {
       }
 
       let browserDeps: BrowserSessionRunnerDeps | undefined;
-      if (resolvedEngine === "browser" && resolvedRemote.host) {
-        if (!resolvedRemote.token) {
-          return {
-            isError: true,
-            content: textContent(
-              `Remote host configured (${resolvedRemote.host}) but remote token is missing. Run \`oracle bridge client --connect <...>\` or set ORACLE_REMOTE_TOKEN.`,
-            ),
-          };
-        }
+      const remoteExecution = getConsultRemoteExecution({
+        resolvedEngine,
+        remoteHost,
+        remoteToken: resolvedRemote.token,
+      });
+      if (remoteExecution.missingTokenError) {
+        return {
+          isError: true,
+          content: textContent(remoteExecution.missingTokenError),
+        };
+      }
+      if (remoteExecution.useRemoteExecutor && remoteHost) {
         browserDeps = {
           executeBrowser: createRemoteBrowserExecutor({
-            host: resolvedRemote.host,
+            host: remoteHost,
             token: resolvedRemote.token,
           }),
         };
