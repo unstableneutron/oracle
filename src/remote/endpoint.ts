@@ -81,7 +81,7 @@ function parseBareEndpoint(raw: string): RemoteEndpoint {
     );
   }
 
-  validateBarePortSegment(raw);
+  validateBareEndpoint(raw);
 
   try {
     const { hostname, port } = parseHostPort(raw);
@@ -95,30 +95,35 @@ function parseBareEndpoint(raw: string): RemoteEndpoint {
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (message.includes("Wrap IPv6 addresses in brackets")) {
-      throw new Error(`Expected --remote-host host to be IPv6 in brackets, for example [2001:db8::1]:9473. ${REMOTE_HOST_HELP}`);
-    }
-    if (message.includes("Expected host:port (IPv6 must use [host]:port notation).")) {
-      throw new Error(
-        `Expected --remote-host to be host:port when no scheme is used (no-scheme input defaults to HTTP). ${REMOTE_HOST_HELP}`,
-      );
-    }
-    if (message.includes("Host portion is missing")) {
-      throw new Error(`Expected --remote-host to contain a valid host. ${REMOTE_HOST_HELP}`);
-    }
     throw new Error(`${message} ${REMOTE_HOST_HELP}`);
   }
 }
 
-function validateBarePortSegment(raw: string): void {
+function validateBareEndpoint(raw: string): void {
   const lastColon = raw.lastIndexOf(":");
   if (lastColon < 0) {
-    return;
+    throw new Error(
+      `Expected --remote-host to be host:port when no scheme is used (no-scheme input defaults to HTTP). ${REMOTE_HOST_HELP}`,
+    );
   }
+
+  const hostnameSegment = raw.slice(0, lastColon).trim();
   const portSegment = raw.slice(lastColon + 1);
+
+  if (!hostnameSegment) {
+    throw new Error(`Expected --remote-host to contain a valid host. ${REMOTE_HOST_HELP}`);
+  }
+
   if (!/^\d+$/.test(portSegment)) {
     throw new Error(
       `Expected --remote-host to be host:port when no scheme is used (no-scheme input defaults to HTTP). ${REMOTE_HOST_HELP}`,
+    );
+  }
+
+  const isBracketedIpv6 = /^\[[^\]]+\]$/.test(hostnameSegment);
+  if (hostnameSegment.includes(":") && !isBracketedIpv6) {
+    throw new Error(
+      `Expected --remote-host host to be IPv6 in brackets, for example [2001:db8::1]:9473. ${REMOTE_HOST_HELP}`,
     );
   }
 }
