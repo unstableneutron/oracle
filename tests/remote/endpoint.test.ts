@@ -31,6 +31,18 @@ describe("parseRemoteEndpoint", () => {
     expect(() => parseRemoteEndpoint("not-a-host")).toThrow(/host:port/i);
   });
 
+  it("trims surrounding whitespace for bare inputs", () => {
+    const endpoint = parseRemoteEndpoint(" 127.0.0.1:9473 ");
+    expect(endpoint).toEqual({
+      transport: "http",
+      original: "127.0.0.1:9473",
+      isUrlInput: false,
+      hostname: "127.0.0.1",
+      port: 9473,
+      basePath: "",
+    });
+  });
+
   it("accepts bare bracketed IPv6 host", () => {
     const endpoint = parseRemoteEndpoint("[::1]:9473");
     expect(endpoint).toEqual({
@@ -93,6 +105,11 @@ describe("parseRemoteEndpoint", () => {
     expect(parseRemoteEndpoint("https://example.com/oracle///").basePath).toBe("/oracle");
   });
 
+  it("normalizes repeated leading slashes in URL base paths", () => {
+    expect(parseRemoteEndpoint("https://example.com//oracle").basePath).toBe("/oracle");
+    expect(parseRemoteEndpoint("https://example.com///oracle//").basePath).toBe("/oracle");
+  });
+
   it("rejects unsupported schemes", () => {
     expect(() => parseRemoteEndpoint("ftp://example.com:21")).toThrow(/Unsupported scheme/i);
     expect(() => parseRemoteEndpoint("file:///tmp/remote")).toThrow(/Unsupported scheme/i);
@@ -144,5 +161,9 @@ describe("joinRemotePath", () => {
 
   it("never emits double slashes for trailing slash basePath", () => {
     expect(joinRemotePath(parseRemoteEndpoint("https://example.com/oracle//"), "/health")).toBe("/oracle/health");
+  });
+
+  it("never emits double slashes for repeated leading slashes in basePath", () => {
+    expect(joinRemotePath(parseRemoteEndpoint("https://example.com//oracle"), "/health")).toBe("/oracle/health");
   });
 });
