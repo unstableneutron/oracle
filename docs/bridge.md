@@ -47,9 +47,21 @@ oracle bridge client --connect ~/bridge-connection.json --write-config --test
 
 This writes:
 
-- `~/.oracle/config.json` → `browser.remoteHost` and `browser.remoteToken`
+- `~/.oracle/config.json` → `browser.remoteHost` and `browser.remoteToken` (host-oriented host:port form).
 
 Now browser runs automatically route through the host:
+
+If your Linux entrypoint sits behind TLS or a path-based reverse proxy, overwrite `browser.remoteHost` in `~/.oracle/config.json` after this step:
+
+```json
+{
+  "browser": {
+    "remoteHost": "https://serve.example.com/oracle"
+  }
+}
+```
+
+Direct clients may use URL-valued `browser.remoteHost`; bridge artifacts remain host-oriented so tokens can stay simple and portable.
 
 ```bash
 oracle --engine browser -p "hello" --file README.md

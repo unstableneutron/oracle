@@ -667,7 +667,7 @@ program
   )
   .addOption(
     new Option(
-      "--remote-host <host:port>",
+      "--remote-host <host-or-url>",
       "Delegate browser runs to a remote `oracle serve` instance.",
     ),
   )
@@ -1066,10 +1066,13 @@ program
   .description("Re-run a stored session as a new session (clones options).")
   .addOption(new Option("--wait").default(undefined))
   .addOption(new Option("--no-wait").default(undefined).hideHelp())
-  .option("--remote-host <host:port>", "Delegate browser runs to a remote `oracle serve` instance.")
+  .option(
+    "--remote-host <host-or-url>",
+    "Delegate browser runs to a remote `oracle serve` instance.",
+  )
   .option("--remote-token <token>", "Access token for the remote `oracle serve` instance.")
   .action(async (sessionId: string, _options: RestartCommandOptions, cmd: Command) => {
-    const restartOptions = cmd.opts<RestartCommandOptions>();
+    const restartOptions = cmd.optsWithGlobals<RestartCommandOptions>();
     await restartSession(sessionId, restartOptions);
   });
 
