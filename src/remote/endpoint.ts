@@ -51,10 +51,11 @@ function parseEndpointUrl(raw: string): RemoteEndpoint {
     throw new Error(`Fragments are not supported in --remote-host. ${REMOTE_HOST_HELP}`);
   }
 
-  const hostname = url.hostname?.trim();
-  if (!hostname) {
+  const rawHostname = url.hostname?.trim();
+  if (!rawHostname) {
     throw new Error(`Expected --remote-host to contain a valid host. ${REMOTE_HOST_HELP}`);
   }
+  const hostname = normalizeHostname(rawHostname);
 
   const transport = url.protocol.slice(0, -1) as RemoteEndpoint["transport"];
   const port = parsePort(url.port, transport === "http" ? 80 : 443);
@@ -141,6 +142,15 @@ function validateBareEndpoint(raw: string): void {
       `Expected --remote-host host to be IPv6 in brackets, for example [2001:db8::1]:9473. ${REMOTE_HOST_HELP}`,
     );
   }
+}
+
+function normalizeHostname(hostname: string): string {
+  const isBracketed = hostname.startsWith("[") && hostname.endsWith("]");
+  if (!isBracketed) {
+    return hostname;
+  }
+
+  return hostname.slice(1, -1);
 }
 
 function parsePort(raw: string, defaultPort?: number): number {
