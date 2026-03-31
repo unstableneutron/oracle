@@ -47,6 +47,11 @@ describe("parseRemoteEndpoint", () => {
     expect(parseRemoteEndpoint("https://example.com/oracle/").basePath).toBe("/oracle");
   });
 
+  it("strips all trailing slashes from non-root base path", () => {
+    expect(parseRemoteEndpoint("https://example.com/oracle//").basePath).toBe("/oracle");
+    expect(parseRemoteEndpoint("https://example.com/oracle///").basePath).toBe("/oracle");
+  });
+
   it("rejects unsupported schemes", () => {
     expect(() => parseRemoteEndpoint("ftp://example.com:21")).toThrow(/Unsupported scheme/i);
     expect(() => parseRemoteEndpoint("file:///tmp/remote")).toThrow(/Unsupported scheme/i);
@@ -94,5 +99,9 @@ describe("joinRemotePath", () => {
     expect(joinRemotePath(parseRemoteEndpoint("http://example.com/oracle"), "/health")).toBe("/oracle/health");
     expect(joinRemotePath(parseRemoteEndpoint("http://example.com/oracle/"), "/runs")).toBe("/oracle/runs");
     expect(joinRemotePath(parseRemoteEndpoint("https://example.com/"), "/runs")).toBe("/runs");
+  });
+
+  it("never emits double slashes for trailing slash basePath", () => {
+    expect(joinRemotePath(parseRemoteEndpoint("https://example.com/oracle//"), "/health")).toBe("/oracle/health");
   });
 });
