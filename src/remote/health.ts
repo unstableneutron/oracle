@@ -17,7 +17,10 @@ export async function checkTcpConnection(
 ): Promise<{ ok: boolean; error?: string }> {
   const endpoint = parseRemoteEndpoint(host);
   if (endpoint.isUrlInput) {
-    return { ok: true };
+    return {
+      ok: false,
+      error: "TCP checks for URL-style remote hosts are not supported in checkTcpConnection",
+    };
   }
   const { port } = endpoint;
   return await new Promise((resolve) => {

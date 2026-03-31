@@ -98,6 +98,44 @@ describe("remote browser service", () => {
   );
 
   test.skipIf(!CAN_LISTEN_LOCALHOST)(
+    "uses root /runs path for explicit HTTP URL hosts",
+    async () => {
+      const runLog: string[] = [];
+      const server = await createRemoteServer(
+        { host: "127.0.0.1", port: 0, token: "secret", logger: () => {} },
+        {
+          runBrowser: async (options) => {
+            runLog.push(options.prompt);
+            const result: BrowserRunResult = {
+              answerText: "hi",
+              answerMarkdown: "hi",
+              tookMs: 1000,
+              answerTokens: 42,
+              answerChars: 2,
+            };
+            return result;
+          },
+        },
+      );
+
+      const executor = createRemoteBrowserExecutor({
+        host: `http://127.0.0.1:${server.port}`,
+        token: "secret",
+      });
+
+      const result = await executor({
+        prompt: "remote",
+        config: {},
+      });
+
+      expect(result.answerText).toBe("hi");
+      expect(runLog).toEqual(["remote"]);
+
+      await server.close();
+    },
+  );
+
+  test.skipIf(!CAN_LISTEN_LOCALHOST)(
     "does not accept prefixed /oracle paths without URL-mode clients",
     async () => {
       const server = await createRemoteServer(

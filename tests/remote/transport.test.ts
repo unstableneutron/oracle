@@ -160,6 +160,40 @@ describe("remote transport", () => {
     await server.close();
   });
 
+  test("fails TLS transport for https:// when server is plain HTTP", async () => {
+    const records: RequestRecord[] = [];
+    const server = await createCaptureServer("http", (req, res) => {
+      records.push({
+        method: req.method ?? "",
+        path: req.url ?? "",
+        headers: { ...req.headers },
+      });
+      res.writeHead(404);
+      res.end();
+    });
+
+    const { createRemoteBrowserExecutor } = await import("../../src/remote/client.js");
+    const executor = createRemoteBrowserExecutor({
+      host: `https://127.0.0.1:${server.port}`,
+      token: "secret",
+    });
+
+    await expect(
+      executor({
+        prompt: "ping",
+        config: {},
+      }),
+    ).rejects.toMatchObject({
+      message: expect.stringMatching(
+        /SSL|TLS|certificate|wrong version|alert|ECONNRESET|socket hang up|unexpected/i,
+      ),
+    });
+
+    expect(records).toHaveLength(0);
+
+    await server.close();
+  });
+
   test("probes bare /health with plain HTTP", async () => {
     const records: RequestRecord[] = [];
     const server = await createCaptureServer("http", (req, res) => {
@@ -182,6 +216,49 @@ describe("remote transport", () => {
     const { checkRemoteHealth } = await import("../../src/remote/health.js");
     const result = await checkRemoteHealth({
       host: `127.0.0.1:${server.port}`,
+      token: "secret",
+      timeoutMs: 1500,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.version).toBe("1.0.0");
+    expect(records).toHaveLength(1);
+    expect(records[0].path).toBe("/health");
+    expect(records[0].headers.authorization).toBe("Bearer secret");
+
+    await server.close();
+  });
+
+  test("does not mark URL remote hosts as TCP-connected", async () => {
+    const { checkTcpConnection } = await import("../../src/remote/health.js");
+    const result = await checkTcpConnection("http://127.0.0.1:9473");
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/URL-style remote hosts are not supported/i);
+  });
+
+  test("probes root /health for explicit http URLs", async () => {
+    const records: RequestRecord[] = [];
+    const server = await createCaptureServer("http", (req, res) => {
+      records.push({
+        method: req.method ?? "",
+        path: req.url ?? "",
+        headers: { ...req.headers },
+      });
+
+      if (req.method === "GET" && req.url === "/health") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, version: "1.0.0", uptimeSeconds: 3 }));
+        return;
+      }
+
+      res.writeHead(404);
+      res.end();
+    });
+
+    const { checkRemoteHealth } = await import("../../src/remote/health.js");
+    const result = await checkRemoteHealth({
+      host: `http://127.0.0.1:${server.port}`,
       token: "secret",
       timeoutMs: 1500,
     });
