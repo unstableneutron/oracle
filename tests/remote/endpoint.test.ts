@@ -31,6 +31,18 @@ describe("parseRemoteEndpoint", () => {
     expect(() => parseRemoteEndpoint("not-a-host")).toThrow(/host:port/i);
   });
 
+  it("rejects malformed bare port segments", () => {
+    expect(() => parseRemoteEndpoint("127.0.0.1:9473abc")).toThrow(
+      /Expected --remote-host to be host:port when no scheme is used/i,
+    );
+    expect(() => parseRemoteEndpoint("127.0.0.1:+9473")).toThrow(
+      /Expected --remote-host to be host:port when no scheme is used/i,
+    );
+    expect(() => parseRemoteEndpoint("127.0.0.1:9 473")).toThrow(
+      /Expected --remote-host to be host:port when no scheme is used/i,
+    );
+  });
+
   it("accepts http and https URLs", () => {
     const http = parseRemoteEndpoint("http://localhost:9473/oracle/");
     expect(http.transport).toBe("http");
