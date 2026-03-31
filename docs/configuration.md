@@ -23,7 +23,10 @@ Oracle reads an optional per-user config from `~/.oracle/config.json`. The file 
     chromeCookiePath: null,
     chatgptUrl: "https://chatgpt.com/", // root is fine; folder URLs also work
     url: null, // alias for chatgptUrl (kept for back-compat)
-    // Remote browser bridge (preferred place to store remote host settings)
+    // Remote browser bridge (preferred place to store remote host settings).
+    // Accepts either:
+    // - host:port (legacy)
+    // - http(s)://host[:port][/base-path] (for TLS + path-based reverse proxies)
     remoteHost: "127.0.0.1:9473",
     remoteToken: "…", // written by `oracle bridge client` (kept private; not printed by default)
     remoteViaSshReverseTunnel: { ssh: "user@linux-host", remotePort: 9473 }, // optional metadata
@@ -73,11 +76,15 @@ CLI flags → `config.json` → environment → built-in defaults.
 - `ORACLE_ENGINE=api|browser` is a global override for engine selection (useful for MCP/Codex setups); it wins over `config.json`.
 - If `azure.endpoint` (or `--azure-endpoint`) is set, Oracle reads `AZURE_OPENAI_API_KEY` first and falls back to `OPENAI_API_KEY` for GPT models.
 - Remote browser defaults follow the same order: `--remote-host/--remote-token` win, then `browser.remoteHost` / `browser.remoteToken` in the config, then `ORACLE_REMOTE_HOST` / `ORACLE_REMOTE_TOKEN` if still unset.
+  `browser.remoteHost` accepts both `host:port` and `http(s)://host[:port][/base-path]`; in proxy setups the path prefix must map to the service `/health` and `/runs` routes.
 - `OPENAI_API_KEY` only influences engine selection when neither the CLI nor `config.json` specify an engine (API when present, otherwise browser).
 - `ORACLE_NOTIFY*` env vars still layer on top of the config’s `notify` block.
 - `sessionRetentionHours` controls the default value for `--retain-hours`. When unset, `ORACLE_RETAIN_HOURS` (if present) becomes the fallback, and the CLI flag still wins over both.
 - `ORACLE_MAX_FILE_SIZE_BYTES` overrides `maxFileSizeBytes` when set. Oracle validates it as a positive integer number of bytes before reading any `--file` inputs.
 - `browser.chatgptUrl` accepts either the root ChatGPT URL (`https://chatgpt.com/`) or a folder/workspace URL (e.g., `https://chatgpt.com/g/.../project`); `browser.url` remains as a legacy alias.
+- `browser.remoteHost` accepts `host:port` and `http(s)://host[:port][/base-path]`; use whichever matches your TLS proxy setup.
+  Example:
+  - `browser.remoteHost: "https://serve.example.com/oracle"`
 - Browser automation defaults can be set under `browser.*`, including `browser.manualLogin`, `browser.manualLoginProfileDir`, and `browser.thinkingTime` (CLI override: `--browser-thinking-time`). On Windows, `browser.manualLogin` defaults to `true` when omitted.
 
 If the config is missing or invalid, Oracle falls back to defaults and prints a warning for parse errors.
