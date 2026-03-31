@@ -1,3 +1,4 @@
+import net from "node:net";
 import { parseHostPort } from "../bridge/connection.js";
 
 const REMOTE_HOST_HELP =
@@ -126,6 +127,11 @@ function validateBareEndpoint(raw: string): void {
     if (!bracketedHost.includes(":")) {
       throw new Error(
         `Expected --remote-host host to be IPv6 in brackets, for example [2001:db8::1]:9473. ${REMOTE_HOST_HELP}`,
+      );
+    }
+    if (net.isIP(bracketedHost) !== 6) {
+      throw new Error(
+        `Expected --remote-host host to be a valid IPv6 address in brackets, for example [2001:db8::1]:9473. ${REMOTE_HOST_HELP}`,
       );
     }
   }

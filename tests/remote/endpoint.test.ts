@@ -60,6 +60,11 @@ describe("parseRemoteEndpoint", () => {
     expect(() => parseRemoteEndpoint("[localhost]:9473")).toThrow(/IPv6/i);
   });
 
+  it("validates IPv6 addresses in bare brackets", () => {
+    expect(() => parseRemoteEndpoint("[foo:bar]:9473")).toThrow(/IPv6/i);
+    expect(() => parseRemoteEndpoint("[2001:db8::zz]:9473")).toThrow(/IPv6/i);
+  });
+
   it("rejects malformed bare port segments", () => {
     expect(() => parseRemoteEndpoint("127.0.0.1:9473abc")).toThrow(
       /Expected --remote-host to be host:port when no scheme is used/i,
