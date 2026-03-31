@@ -364,7 +364,7 @@ Prefer to keep Chrome entirely on the remote Mac (no DevTools tunneling, no manu
 3. **What happens**
    - The CLI assembles the composed prompt + file bundle locally, sends them to the VM, and streams log lines/answer text back through the same HTTP connection.
    - The remote host runs Chrome locally, pulls ChatGPT cookies from its own Chrome profile, and reuses them across runs while the service is up. If cookies are missing, the service exits after opening chatgpt.com so you can sign in before restarting.
-   - If your proxy terminates TLS or adds a path prefix, keep `POST /runs` and `GET /health` stream-safe.
+   - If your proxy terminates TLS or adds a path prefix, keep `/runs` and `/health` stream-safe; in particular, disable proxy buffering on `/runs` because streamed answer chunks must flow through it.
    - For path-based prefixes, rewrite upstream paths back to root (`/oracle/health -> /health`, `/oracle/runs -> /runs`).
    - Background/detached sessions (`--no-wait`) are disabled in remote mode so the CLI can keep streaming output.
    - `oracle serve` logs the DevTools port of the manual-login Chrome (e.g., `Manual-login Chrome DevTools port: 54371`). Runs automatically attach to that logged-in Chrome; you can use the printed port/JSON URL for debugging if needed.

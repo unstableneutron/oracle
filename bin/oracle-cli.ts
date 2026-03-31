@@ -668,7 +668,7 @@ program
   .addOption(
     new Option(
       "--remote-host <host-or-url>",
-      "Delegate browser runs to a remote `oracle serve` instance.",
+      "Delegate browser runs to a remote `oracle serve` instance (host:port or http(s)://host[:port][/base-path]).",
     ),
   )
   .addOption(
@@ -1068,7 +1068,7 @@ program
   .addOption(new Option("--no-wait").default(undefined).hideHelp())
   .option(
     "--remote-host <host-or-url>",
-    "Delegate browser runs to a remote `oracle serve` instance.",
+    "Delegate browser runs to a remote `oracle serve` instance (host:port or http(s)://host[:port][/base-path]).",
   )
   .option("--remote-token <token>", "Access token for the remote `oracle serve` instance.")
   .action(async (sessionId: string, _options: RestartCommandOptions, cmd: Command) => {
