@@ -19,7 +19,7 @@ export interface BrowserConfigDefaults {
   chromeCookiePath?: string | null;
   chatgptUrl?: string | null;
   url?: string;
-  /** Delegate browser automation to a remote `oracle serve` instance (host:port). */
+  /** Delegate browser automation to a remote `oracle serve` instance (host:port or http(s)://...). */
   remoteHost?: string | null;
   /** Access token clients must provide to the remote `oracle serve` instance. */
   remoteToken?: string | null;

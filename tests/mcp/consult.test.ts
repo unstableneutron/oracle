@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { SessionModelRun } from "../../src/sessionStore.js";
 import {
   buildConsultBrowserConfig,
+  getConsultRemoteExecution,
   summarizeModelRunsForConsult,
 } from "../../src/mcp/tools/consult.ts";
 
@@ -93,5 +94,21 @@ describe("summarizeModelRunsForConsult", () => {
       desiredModel: "Claude Sonnet",
       cookieSync: false,
     });
+  });
+});
+
+
+describe("consult remote execution resolver", () => {
+  test("treats URL-valued remoteHost as remote execution and returns missing-token error", () => {
+    const result = getConsultRemoteExecution({
+      resolvedEngine: "browser",
+      remoteHost: "https://oracle.thinh.dev",
+      remoteToken: undefined,
+    });
+
+    expect(result.useRemoteExecutor).toBe(false);
+    expect(result.missingTokenError).toBe(
+      "Remote host configured (https://oracle.thinh.dev) but remote token is missing. Run `oracle bridge client --connect <...>` or set ORACLE_REMOTE_TOKEN.",
+    );
   });
 });

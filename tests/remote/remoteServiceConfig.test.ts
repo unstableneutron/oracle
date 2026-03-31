@@ -72,4 +72,19 @@ describe("resolveRemoteServiceConfig", () => {
     expect(resolved.sources.host).toBe("env");
     expect(resolved.sources.token).toBe("env");
   });
+
+  it("preserves https remote host values without normalization", () => {
+    const resolved = resolveRemoteServiceConfig({
+      userConfig: {
+        browser: {
+          remoteHost: "https://oracle.thinh.dev",
+          remoteToken: "cfg-token",
+        },
+      },
+      env: {} as NodeJS.ProcessEnv,
+    });
+
+    expect(resolved.host).toBe("https://oracle.thinh.dev");
+    expect(resolved.token).toBe("cfg-token");
+  });
 });

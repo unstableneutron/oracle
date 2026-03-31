@@ -22,6 +22,14 @@ export async function runBridgeDoctor(_options: BridgeDoctorCliOptions): Promise
     env: process.env,
   });
 
+  const remoteHostIsUrl = (value?: string): boolean => {
+    if (!value) {
+      return false;
+    }
+    const trimmed = value.trim();
+    return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed);
+  };
+
   const lines: string[] = [];
   const fail: string[] = [];
   const warn: string[] = [];
@@ -50,21 +58,26 @@ export async function runBridgeDoctor(_options: BridgeDoctorCliOptions): Promise
       ),
     );
 
-    const tcp = await checkTcpConnection(resolvedRemote.host, 2000);
-    if (tcp.ok) {
-      lines.push(chalk.dim(`TCP connect: ${chalk.green("ok")}`));
-    } else {
-      fail.push(`Cannot reach ${resolvedRemote.host} (${tcp.error ?? "unknown error"}).`);
-      lines.push(
-        chalk.dim(`TCP connect: ${chalk.red(`failed (${tcp.error ?? "unknown error"})`)}`),
-      );
+    const isRemoteHostUrl = remoteHostIsUrl(resolvedRemote.host);
+
+    let tcp: { ok: boolean; error?: string } | null = null;
+    if (!isRemoteHostUrl) {
+      tcp = await checkTcpConnection(resolvedRemote.host, 2000);
+      if (tcp.ok) {
+        lines.push(chalk.dim(`TCP connect: ${chalk.green("ok")}`));
+      } else {
+        fail.push(`Cannot reach ${resolvedRemote.host} (${tcp.error ?? "unknown error"}).`);
+        lines.push(
+          chalk.dim(`TCP connect: ${chalk.red(`failed (${tcp.error ?? "unknown error"})`)}`),
+        );
+      }
     }
 
     if (!resolvedRemote.token) {
       fail.push(
         "Remote token is missing. Run `oracle bridge client --connect <...> --write-config` or set ORACLE_REMOTE_TOKEN.",
       );
-    } else if (tcp.ok) {
+    } else if (isRemoteHostUrl || tcp?.ok) {
       const health = await checkRemoteHealth({
         host: resolvedRemote.host,
         token: resolvedRemote.token,
