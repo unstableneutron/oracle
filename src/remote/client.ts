@@ -1,11 +1,12 @@
 import http from "node:http";
+import https from "node:https";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import type { BrowserRunOptions } from "../browserMode.js";
-import type { BrowserRunResult } from "../browserMode.js";
+import type { BrowserRunOptions, BrowserRunResult } from "../browserMode.js";
 import type { BrowserAttachment } from "../browser/types.js";
+import type { RemoteEndpoint } from "./endpoint.js";
 import type { RemoteRunPayload, RemoteRunEvent, RemoteAttachmentPayload } from "./types.js";
-import { parseHostPort } from "../bridge/connection.js";
+import { parseRemoteEndpoint, joinRemotePath } from "./endpoint.js";
 
 interface RemoteExecutorOptions {
   host: string;
@@ -28,14 +29,16 @@ export function createRemoteBrowserExecutor({ host, token }: RemoteExecutorOptio
     };
 
     const body = Buffer.from(JSON.stringify(payload));
-    const { hostname, port } = parseHost(host);
+    const endpoint = parseEndpoint(host);
+    const requestPath = joinRemotePath(endpoint, "/runs");
 
     return new Promise<BrowserRunResult>((resolve, reject) => {
-      const req = http.request(
+      const protocol = endpoint.transport === "https" ? https : http;
+      const req = protocol.request(
         {
-          hostname,
-          port,
-          path: "/runs",
+          hostname: endpoint.hostname,
+          port: endpoint.port,
+          path: requestPath,
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -105,9 +108,9 @@ async function serializeAttachments(
   return serialized;
 }
 
-function parseHost(input: string): { hostname: string; port: number } {
+function parseEndpoint(input: string): RemoteEndpoint {
   try {
-    return parseHostPort(input);
+    return parseRemoteEndpoint(input);
   } catch (error) {
     throw new Error(
       `Invalid remote host: ${input} (${error instanceof Error ? error.message : String(error)})`,

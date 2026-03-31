@@ -96,6 +96,33 @@ describe("remote browser service", () => {
       await rm(tmpDir, { recursive: true, force: true });
     },
   );
+
+  test.skipIf(!CAN_LISTEN_LOCALHOST)(
+    "does not accept prefixed /oracle paths without URL-mode clients",
+    async () => {
+      const server = await createRemoteServer(
+        { host: "127.0.0.1", port: 0, token: "secret", logger: () => {} },
+      );
+
+      const prefixedHealth = await httpGetJson({
+        hostname: "127.0.0.1",
+        port: server.port,
+        path: "/oracle/health",
+        token: "secret",
+      });
+      expect(prefixedHealth.statusCode).toBe(404);
+
+      const baseHealth = await httpGetJson({
+        hostname: "127.0.0.1",
+        port: server.port,
+        path: "/health",
+        token: "secret",
+      });
+      expect(baseHealth.statusCode).toBe(200);
+
+      await server.close();
+    },
+  );
 });
 
 async function httpGetJson({

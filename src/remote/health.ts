@@ -1,6 +1,7 @@
 import http from "node:http";
+import https from "node:https";
 import net from "node:net";
-import { parseHostPort } from "../bridge/connection.js";
+import { parseRemoteEndpoint, joinRemotePath } from "./endpoint.js";
 
 export interface RemoteHealthResult {
   ok: boolean;
@@ -14,9 +15,13 @@ export async function checkTcpConnection(
   host: string,
   timeoutMs = 2000,
 ): Promise<{ ok: boolean; error?: string }> {
-  const { hostname, port } = parseHostPort(host);
+  const endpoint = parseRemoteEndpoint(host);
+  if (endpoint.isUrlInput) {
+    return { ok: true };
+  }
+  const { port } = endpoint;
   return await new Promise((resolve) => {
-    const socket = net.createConnection({ host: hostname, port });
+    const socket = net.createConnection({ host: endpoint.hostname, port });
     const onError = (err: Error) => {
       cleanup();
       resolve({ ok: false, error: err.message });
@@ -51,16 +56,17 @@ export async function checkRemoteHealth({
   token?: string;
   timeoutMs?: number;
 }): Promise<RemoteHealthResult> {
-  const { hostname, port } = parseHostPort(host);
+  const endpoint = parseRemoteEndpoint(host);
   const headers: Record<string, string> = { accept: "application/json" };
   if (token) {
     headers.authorization = `Bearer ${token}`;
   }
   try {
     const response = await requestJson({
-      hostname,
-      port,
-      path: "/health",
+      protocol: endpoint.transport === "https" ? https : http,
+      hostname: endpoint.hostname,
+      port: endpoint.port,
+      path: joinRemotePath(endpoint, "/health"),
       headers,
       timeoutMs,
     });
@@ -102,12 +108,14 @@ function extractErrorMessage(json: unknown, bodyText: string): string | null {
 }
 
 async function requestJson({
+  protocol,
   hostname,
   port,
   path,
   headers,
   timeoutMs,
 }: {
+  protocol: typeof http | typeof https;
   hostname: string;
   port: number;
   path: string;
@@ -115,7 +123,7 @@ async function requestJson({
   timeoutMs: number;
 }): Promise<{ statusCode: number; json: unknown; bodyText: string }> {
   return await new Promise((resolve, reject) => {
-    const req = http.request(
+    const req = protocol.request(
       {
         hostname,
         port,
