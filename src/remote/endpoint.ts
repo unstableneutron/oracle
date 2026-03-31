@@ -120,8 +120,17 @@ function validateBareEndpoint(raw: string): void {
     );
   }
 
-  const isBracketedIpv6 = /^\[[^\]]+\]$/.test(hostnameSegment);
-  if (hostnameSegment.includes(":") && !isBracketedIpv6) {
+  const isBracketedHost = /^\[[^\]]*\]$/.test(hostnameSegment);
+  if (isBracketedHost) {
+    const bracketedHost = hostnameSegment.slice(1, -1);
+    if (!bracketedHost.includes(":")) {
+      throw new Error(
+        `Expected --remote-host host to be IPv6 in brackets, for example [2001:db8::1]:9473. ${REMOTE_HOST_HELP}`,
+      );
+    }
+  }
+
+  if (hostnameSegment.includes(":") && !isBracketedHost) {
     throw new Error(
       `Expected --remote-host host to be IPv6 in brackets, for example [2001:db8::1]:9473. ${REMOTE_HOST_HELP}`,
     );
