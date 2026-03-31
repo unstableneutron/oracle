@@ -55,6 +55,30 @@ describe("parseRemoteEndpoint", () => {
     });
   });
 
+  it("unwraps IPv6 hostnames for URL inputs", () => {
+    const endpoint = parseRemoteEndpoint("http://[::1]:9473");
+    expect(endpoint).toEqual({
+      transport: "http",
+      original: "http://[::1]:9473",
+      isUrlInput: true,
+      hostname: "::1",
+      port: 9473,
+      basePath: "",
+    });
+  });
+
+  it("unwraps IPv6 hostnames for URL inputs with path", () => {
+    const endpoint = parseRemoteEndpoint("http://[::1]:9473/oracle/");
+    expect(endpoint).toEqual({
+      transport: "http",
+      original: "http://[::1]:9473/oracle/",
+      isUrlInput: true,
+      hostname: "::1",
+      port: 9473,
+      basePath: "/oracle",
+    });
+  });
+
   it("rejects bare bracketed non-IPv6 hosts", () => {
     expect(() => parseRemoteEndpoint("[]:9473")).toThrow(/IPv6/i);
     expect(() => parseRemoteEndpoint("[localhost]:9473")).toThrow(/IPv6/i);
