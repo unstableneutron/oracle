@@ -68,26 +68,26 @@ function parseEndpointUrl(raw: string): RemoteEndpoint {
   };
 }
 
-function parseBareEndpoint(raw: string): RemoteEndpoint {
-  if (raw.includes("@")) {
+function parseBareEndpoint(trimmedRaw: string): RemoteEndpoint {
+  if (trimmedRaw.includes("@")) {
     throw new Error(`Embedded credentials are not allowed in --remote-host. ${REMOTE_HOST_HELP}`);
   }
-  if (raw.includes("?") || raw.includes("#")) {
+  if (trimmedRaw.includes("?") || trimmedRaw.includes("#")) {
     throw new Error(`Expected --remote-host to be in a supported form. Query parameters and fragments are not supported. ${REMOTE_HOST_HELP}`);
   }
-  if (raw.includes("/")) {
+  if (trimmedRaw.includes("/")) {
     throw new Error(
       `Expected --remote-host to be host:port when no scheme is used (no-scheme input defaults to HTTP). ${REMOTE_HOST_HELP}`,
     );
   }
 
-  validateBareEndpoint(raw);
+  validateBareEndpoint(trimmedRaw);
 
   try {
-    const { hostname, port } = parseHostPort(raw);
+    const { hostname, port } = parseHostPort(trimmedRaw);
     return {
       transport: "http",
-      original: raw,
+      original: trimmedRaw,
       isUrlInput: false,
       hostname,
       port,
@@ -107,7 +107,7 @@ function validateBareEndpoint(raw: string): void {
     );
   }
 
-  const hostnameSegment = raw.slice(0, lastColon).trim();
+  const hostnameSegment = raw.slice(0, lastColon);
   const portSegment = raw.slice(lastColon + 1);
 
   if (!hostnameSegment) {
@@ -164,6 +164,7 @@ export function joinRemotePath(
 
 function normalizeBasePath(pathname: string): string {
   const trimmed = pathname.trim();
-  const withoutTrailingSlashes = trimmed.replace(/\/+$/, "");
+  const normalizedLeadingSlashes = trimmed.replace(/^\/+/, "/");
+  const withoutTrailingSlashes = normalizedLeadingSlashes.replace(/\/+$/, "");
   return withoutTrailingSlashes;
 }
