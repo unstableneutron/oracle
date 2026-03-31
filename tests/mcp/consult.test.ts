@@ -99,7 +99,7 @@ describe("summarizeModelRunsForConsult", () => {
 
 
 describe("consult remote execution resolver", () => {
-  test("treats URL-valued remoteHost as remote execution and returns missing-token error", () => {
+  test("returns missing-token error for URL-valued remoteHost without token", () => {
     const result = getConsultRemoteExecution({
       resolvedEngine: "browser",
       remoteHost: "https://oracle.thinh.dev",
@@ -110,5 +110,16 @@ describe("consult remote execution resolver", () => {
     expect(result.missingTokenError).toBe(
       "Remote host configured (https://oracle.thinh.dev) but remote token is missing. Run `oracle bridge client --connect <...>` or set ORACLE_REMOTE_TOKEN.",
     );
+  });
+
+  test("enables remote execution for URL-valued remoteHost with token", () => {
+    const result = getConsultRemoteExecution({
+      resolvedEngine: "browser",
+      remoteHost: "https://oracle.thinh.dev",
+      remoteToken: "token-123",
+    });
+
+    expect(result).toEqual({ useRemoteExecutor: true });
+    expect(result.missingTokenError).toBeUndefined();
   });
 });

@@ -3,6 +3,7 @@ import chalk from "chalk";
 import { getCliVersion } from "../../version.js";
 import { loadUserConfig } from "../../config.js";
 import { resolveRemoteServiceConfig } from "../../remote/remoteServiceConfig.js";
+import { parseRemoteEndpoint } from "../../remote/endpoint.js";
 import { checkTcpConnection, checkRemoteHealth } from "../../remote/health.js";
 import { detectChromeBinary, detectChromeCookieDb } from "../../browser/detect.js";
 import { formatCodexMcpSnippet } from "./codexConfig.js";
@@ -21,14 +22,6 @@ export async function runBridgeDoctor(_options: BridgeDoctorCliOptions): Promise
     userConfig,
     env: process.env,
   });
-
-  const remoteHostIsUrl = (value?: string): boolean => {
-    if (!value) {
-      return false;
-    }
-    const trimmed = value.trim();
-    return /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed);
-  };
 
   const lines: string[] = [];
   const fail: string[] = [];
@@ -58,10 +51,10 @@ export async function runBridgeDoctor(_options: BridgeDoctorCliOptions): Promise
       ),
     );
 
-    const isRemoteHostUrl = remoteHostIsUrl(resolvedRemote.host);
+    const endpoint = parseRemoteEndpoint(resolvedRemote.host);
 
     let tcp: { ok: boolean; error?: string } | null = null;
-    if (!isRemoteHostUrl) {
+    if (!endpoint.isUrlInput) {
       tcp = await checkTcpConnection(resolvedRemote.host, 2000);
       if (tcp.ok) {
         lines.push(chalk.dim(`TCP connect: ${chalk.green("ok")}`));
@@ -77,7 +70,7 @@ export async function runBridgeDoctor(_options: BridgeDoctorCliOptions): Promise
       fail.push(
         "Remote token is missing. Run `oracle bridge client --connect <...> --write-config` or set ORACLE_REMOTE_TOKEN.",
       );
-    } else if (isRemoteHostUrl || tcp?.ok) {
+    } else if (endpoint.isUrlInput || tcp?.ok) {
       const health = await checkRemoteHealth({
         host: resolvedRemote.host,
         token: resolvedRemote.token,
