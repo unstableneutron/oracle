@@ -1438,18 +1438,6 @@ async function runRootCommand(options: CliOptions): Promise<void> {
   };
   applyRetentionOption();
 
-  const remoteConfig = resolveRemoteServiceConfig({
-    cliHost: options.remoteHost,
-    cliToken: options.remoteToken,
-    userConfig,
-    env: process.env,
-  });
-  const remoteHost = remoteConfig.host;
-  const remoteToken = remoteConfig.token;
-  if (remoteHost) {
-    console.log(chalk.dim(`Remote browser host detected: ${remoteHost}`));
-  }
-
   if (userCliArgs.length === 0) {
     console.log(
       chalk.yellow(
@@ -1494,6 +1482,19 @@ async function runRootCommand(options: CliOptions): Promise<void> {
   }
   if (optionUsesDefault("baseUrl") && userConfig.apiBaseUrl) {
     options.baseUrl = userConfig.apiBaseUrl;
+  }
+
+  const shouldUseRemoteDefaults = engine === "browser";
+  const remoteConfig = resolveRemoteServiceConfig({
+    cliHost: options.remoteHost,
+    cliToken: options.remoteToken,
+    userConfig: shouldUseRemoteDefaults ? userConfig : undefined,
+    env: shouldUseRemoteDefaults ? process.env : {},
+  });
+  const remoteHost = remoteConfig.host;
+  const remoteToken = remoteConfig.token;
+  if (remoteHost) {
+    console.log(chalk.dim(`Remote browser host detected: ${remoteHost}`));
   }
 
   if (remoteHost && engine !== "browser") {

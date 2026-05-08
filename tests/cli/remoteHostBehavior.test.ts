@@ -1,5 +1,5 @@
 import http from "node:http";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execFile } from "node:child_process";
@@ -113,6 +113,42 @@ describe("remote-host behavior", () => {
 
     expect(result.code).toBe(1);
     expect(result.output).toMatch(/--remote-host requires --engine browser\./);
+  });
+
+  it("ignores config browser.remoteHost when config selects api engine", async () => {
+    const oracleHome = await mkdtemp(path.join(os.tmpdir(), "oracle-api-config-remotehost-"));
+    try {
+      await mkdir(oracleHome, { recursive: true });
+      await writeFile(
+        path.join(oracleHome, "config.json"),
+        JSON.stringify(
+          {
+            engine: "api",
+            model: "gpt-5.4-pro",
+            apiBaseUrl: "https://l.thinh.dev/v1",
+            browser: {
+              remoteHost: "https://o.thinh.dev/",
+              remoteToken: "secret",
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const result = await runCli(["--dry-run", "summary", "-p", "api config smoke"], {
+        ORACLE_HOME_DIR: oracleHome,
+        OPENAI_API_KEY: "dummy",
+      });
+
+      expect(result.code).toBe(0);
+      expect(result.output).toMatch(/browser mode|api mode|Calling|Oracle/);
+      expect(result.output).toContain("gpt-5.4-pro");
+      expect(result.output).not.toMatch(/--remote-host requires --engine browser/);
+      expect(result.output).not.toMatch(/Remote browser host detected/);
+    } finally {
+      await rm(oracleHome, { recursive: true, force: true });
+    }
   });
 
   it("keeps --models guard active when --remote-host is a URL", async () => {
