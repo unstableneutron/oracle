@@ -35,13 +35,18 @@ describe("remote transport", () => {
 
       if (req.method === "POST" && req.url === "/runs") {
         res.writeHead(200, { "Content-Type": "application/x-ndjson" });
-        res.end(`${JSON.stringify({ type: "result", result: {
-          answerText: "remote answer",
-          answerMarkdown: "remote answer",
-          tookMs: 42,
-          answerTokens: 7,
-          answerChars: 12,
-        } })}\n`);
+        res.end(
+          `${JSON.stringify({
+            type: "result",
+            result: {
+              answerText: "remote answer",
+              answerMarkdown: "remote answer",
+              tookMs: 42,
+              answerTokens: 7,
+              answerChars: 12,
+            },
+          })}\n`,
+        );
         return;
       }
 
@@ -79,13 +84,18 @@ describe("remote transport", () => {
 
       if (req.method === "POST" && req.url === "/oracle/runs") {
         res.writeHead(200, { "Content-Type": "application/x-ndjson" });
-        res.end(`${JSON.stringify({ type: "result", result: {
-          answerText: "remote answer",
-          answerMarkdown: "remote answer",
-          tookMs: 42,
-          answerTokens: 7,
-          answerChars: 12,
-        } })}\n`);
+        res.end(
+          `${JSON.stringify({
+            type: "result",
+            result: {
+              answerText: "remote answer",
+              answerMarkdown: "remote answer",
+              tookMs: 42,
+              answerTokens: 7,
+              answerChars: 12,
+            },
+          })}\n`,
+        );
         return;
       }
 
@@ -126,13 +136,18 @@ describe("remote transport", () => {
 
       if (req.method === "POST" && req.url === "/oracle/runs") {
         res.writeHead(200, { "Content-Type": "application/x-ndjson" });
-        res.end(`${JSON.stringify({ type: "result", result: {
-          answerText: "remote answer",
-          answerMarkdown: "remote answer",
-          tookMs: 42,
-          answerTokens: 7,
-          answerChars: 12,
-        } })}\n`);
+        res.end(
+          `${JSON.stringify({
+            type: "result",
+            result: {
+              answerText: "remote answer",
+              answerMarkdown: "remote answer",
+              tookMs: 42,
+              answerTokens: 7,
+              answerChars: 12,
+            },
+          })}\n`,
+        );
         return;
       }
 

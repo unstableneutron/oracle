@@ -32,13 +32,13 @@ function parseEndpointUrl(raw: string): RemoteEndpoint {
   try {
     url = new URL(raw);
   } catch (error) {
-    throw new Error(`Invalid --remote-host URL: ${error instanceof Error ? error.message : String(error)} ${REMOTE_HOST_HELP}`);
+    throw new Error(
+      `Invalid --remote-host URL: ${error instanceof Error ? error.message : String(error)} ${REMOTE_HOST_HELP}`,
+    );
   }
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new Error(
-      `Unsupported scheme "${url.protocol}" in --remote-host. ${REMOTE_HOST_HELP}`,
-    );
+    throw new Error(`Unsupported scheme "${url.protocol}" in --remote-host. ${REMOTE_HOST_HELP}`);
   }
 
   if (url.username || url.password) {
@@ -75,7 +75,9 @@ function parseBareEndpoint(trimmedRaw: string): RemoteEndpoint {
     throw new Error(`Embedded credentials are not allowed in --remote-host. ${REMOTE_HOST_HELP}`);
   }
   if (trimmedRaw.includes("?") || trimmedRaw.includes("#")) {
-    throw new Error(`Expected --remote-host to be in a supported form. Query parameters and fragments are not supported. ${REMOTE_HOST_HELP}`);
+    throw new Error(
+      `Expected --remote-host to be in a supported form. Query parameters and fragments are not supported. ${REMOTE_HOST_HELP}`,
+    );
   }
   if (trimmedRaw.includes("/")) {
     throw new Error(
@@ -158,10 +160,14 @@ function parsePort(raw: string, defaultPort?: number): number {
     if (typeof defaultPort === "number") {
       return defaultPort;
     }
-    throw new Error(`Expected --remote-host to be host:port and the port must be 1-65535. ${REMOTE_HOST_HELP}`);
+    throw new Error(
+      `Expected --remote-host to be host:port and the port must be 1-65535. ${REMOTE_HOST_HELP}`,
+    );
   }
   if (!/^(?:0|[1-9]\d{0,4})$/.test(raw)) {
-    throw new Error(`Expected --remote-host to be host:port and the port must be 1-65535. ${REMOTE_HOST_HELP}`);
+    throw new Error(
+      `Expected --remote-host to be host:port and the port must be 1-65535. ${REMOTE_HOST_HELP}`,
+    );
   }
   const port = Number.parseInt(raw, 10);
   if (Number.isNaN(port) || port <= 0 || port > 65535) {
@@ -170,10 +176,7 @@ function parsePort(raw: string, defaultPort?: number): number {
   return port;
 }
 
-export function joinRemotePath(
-  endpoint: RemoteEndpoint,
-  suffix: "/health" | "/runs",
-): string {
+export function joinRemotePath(endpoint: RemoteEndpoint, suffix: "/health" | "/runs"): string {
   const normalizedBasePath = normalizeBasePath(endpoint.basePath);
   return normalizedBasePath.length ? `${normalizedBasePath}${suffix}` : suffix;
 }

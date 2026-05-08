@@ -236,6 +236,7 @@ describe("inferModelFromLabel", () => {
   });
 
   test("infers 5.5 variants", () => {
+    expect(inferModelFromLabel("Thinking")).toBe("gpt-5.5");
     expect(inferModelFromLabel("ChatGPT 5.5")).toBe("gpt-5.5");
     expect(inferModelFromLabel("GPT-5.5 Pro")).toBe("gpt-5.5-pro");
     expect(inferModelFromLabel("Pro Extended")).toBe("gpt-5.5-pro");

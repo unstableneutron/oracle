@@ -51,7 +51,11 @@ describe("oracle bridge doctor", () => {
 
     await fs.writeFile(
       path.join(tempDir, "config.json"),
-      JSON.stringify({ browser: { remoteHost: "https://bad host", remoteToken: "secret" } }, null, 2),
+      JSON.stringify(
+        { browser: { remoteHost: "https://bad host", remoteToken: "secret" } },
+        null,
+        2,
+      ),
       "utf8",
     );
 

@@ -39,6 +39,8 @@ describe("mapConsultToRunOptions", () => {
 
 describe("ensureBrowserAvailable", () => {
   test("accepts URL remoteHost as remote execution config", () => {
-    expect(ensureBrowserAvailable("browser", { remoteHost: "https://oracle.thinh.dev" })).toBeNull();
+    expect(
+      ensureBrowserAvailable("browser", { remoteHost: "https://oracle.thinh.dev" }),
+    ).toBeNull();
   });
 });

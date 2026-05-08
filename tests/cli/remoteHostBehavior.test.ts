@@ -54,10 +54,7 @@ async function createRunsServer(pathPrefix = ""): Promise<RunServer> {
   const server = http.createServer((request, response) => {
     const normalized = (request.url ?? "").replace(/\/+$/, "");
 
-    if (
-      request.method === "POST" &&
-      normalized === `${prefix}/runs`
-    ) {
+    if (request.method === "POST" && normalized === `${prefix}/runs`) {
       response.writeHead(200, { "Content-Type": "application/x-ndjson" });
       const event = {
         type: "result",

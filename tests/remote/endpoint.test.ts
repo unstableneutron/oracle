@@ -145,16 +145,18 @@ describe("parseRemoteEndpoint", () => {
   });
 
   it("rejects malformed host input", () => {
-    expect(() => parseRemoteEndpoint(""))
-      .toThrow(/Expected --remote-host/i);
+    expect(() => parseRemoteEndpoint("")).toThrow(/Expected --remote-host/i);
     expect(() => parseRemoteEndpoint("http://")).toThrow(/Invalid --remote-host/i);
-    expect(() => parseRemoteEndpoint("not::valid")).toThrow(/IPv6 in brackets|IPv6 addresses in brackets|Expected --remote-host/i);
+    expect(() => parseRemoteEndpoint("not::valid")).toThrow(
+      /IPv6 in brackets|IPv6 addresses in brackets|Expected --remote-host/i,
+    );
     expect(() => parseRemoteEndpoint("host:99999")).toThrow(/between 1 and 65535/i);
   });
 
   it("rejects embedded credentials", () => {
-    expect(() => parseRemoteEndpoint("https://alice:secret@example.com"))
-      .toThrow(/Embedded credentials are not allowed/i);
+    expect(() => parseRemoteEndpoint("https://alice:secret@example.com")).toThrow(
+      /Embedded credentials are not allowed/i,
+    );
     expect(() => parseRemoteEndpoint("alice:secret@127.0.0.1:9473")).toThrow(
       /Embedded credentials are not allowed/i,
     );
@@ -183,16 +185,24 @@ describe("parseRemoteEndpoint", () => {
 describe("joinRemotePath", () => {
   it("builds endpoint paths from basePath", () => {
     expect(joinRemotePath(parseRemoteEndpoint("127.0.0.1:9473"), "/health")).toBe("/health");
-    expect(joinRemotePath(parseRemoteEndpoint("http://example.com/oracle"), "/health")).toBe("/oracle/health");
-    expect(joinRemotePath(parseRemoteEndpoint("http://example.com/oracle/"), "/runs")).toBe("/oracle/runs");
+    expect(joinRemotePath(parseRemoteEndpoint("http://example.com/oracle"), "/health")).toBe(
+      "/oracle/health",
+    );
+    expect(joinRemotePath(parseRemoteEndpoint("http://example.com/oracle/"), "/runs")).toBe(
+      "/oracle/runs",
+    );
     expect(joinRemotePath(parseRemoteEndpoint("https://example.com/"), "/runs")).toBe("/runs");
   });
 
   it("never emits double slashes for trailing slash basePath", () => {
-    expect(joinRemotePath(parseRemoteEndpoint("https://example.com/oracle//"), "/health")).toBe("/oracle/health");
+    expect(joinRemotePath(parseRemoteEndpoint("https://example.com/oracle//"), "/health")).toBe(
+      "/oracle/health",
+    );
   });
 
   it("never emits double slashes for repeated leading slashes in basePath", () => {
-    expect(joinRemotePath(parseRemoteEndpoint("https://example.com//oracle"), "/health")).toBe("/oracle/health");
+    expect(joinRemotePath(parseRemoteEndpoint("https://example.com//oracle"), "/health")).toBe(
+      "/oracle/health",
+    );
   });
 });

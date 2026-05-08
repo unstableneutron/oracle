@@ -30,7 +30,7 @@ const DEFAULT_CHROME_PROFILE = "Default";
 const BROWSER_MODEL_LABELS: [ModelName, string][] = [
   // Most specific first (e.g., "gpt-5.2-thinking" before "gpt-5.2")
   ["gpt-5.5-pro", "GPT-5.5 Pro"],
-  ["gpt-5.5", "Thinking 5.5"],
+  ["gpt-5.5", "Thinking"],
   ["gpt-5.4-pro", "GPT-5.4 Pro"],
   ["gpt-5.2-thinking", "GPT-5.2 Thinking"],
   ["gpt-5.2-instant", "GPT-5.2 Instant"],

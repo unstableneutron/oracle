@@ -277,7 +277,6 @@ describe("summarizeModelRunsForConsult", () => {
   });
 });
 
-
 describe("consult remote execution resolver", () => {
   test("returns missing-token error for URL-valued remoteHost without token", () => {
     const result = getConsultRemoteExecution({

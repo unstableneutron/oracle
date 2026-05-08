@@ -362,7 +362,7 @@ export function inferModelFromLabel(modelValue: string): ModelName {
     return "gpt-5.1";
   }
   if (normalized.includes("thinking")) {
-    return "gpt-5.2-thinking" as ModelName;
+    return "gpt-5.5";
   }
   if (normalized.includes("instant") || normalized.includes("fast")) {
     return "gpt-5.2-instant";

@@ -138,9 +138,12 @@ describe("remote browser service", () => {
   test.skipIf(!CAN_LISTEN_LOCALHOST)(
     "does not accept prefixed /oracle paths without URL-mode clients",
     async () => {
-      const server = await createRemoteServer(
-        { host: "127.0.0.1", port: 0, token: "secret", logger: () => {} },
-      );
+      const server = await createRemoteServer({
+        host: "127.0.0.1",
+        port: 0,
+        token: "secret",
+        logger: () => {},
+      });
 
       const prefixedHealth = await httpGetJson({
         hostname: "127.0.0.1",
